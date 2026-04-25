@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>02 Overview</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 70px; font-size: 72px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 165px; font-size: 32px; color: #a1a1a6; font-weight: 400; }
+
+/* Left side: Stateless LLM */
+.left-panel { position: absolute; left: 80px; top: 320px; width: 800px; }
+.section-label { font-size: 22px; color: #86868b; margin-bottom: 24px; letter-spacing: 1px; text-transform: uppercase; }
+.bubbles { position: relative; height: 320px; }
+.bubble { position: absolute; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 22px 28px; font-size: 18px; color: #d1d1d6; backdrop-filter: blur(4px); }
+.bubble.b1 { left: 0; top: 0; width: 280px; }
+.bubble.b2 { left: 320px; top: 40px; width: 260px; }
+.bubble.b3 { left: 80px; top: 160px; width: 300px; }
+.broken-line { position: absolute; left: 60px; top: 110px; width: 460px; height: 2px; background: linear-gradient(90deg, #ff453a 0%, #ff9f0a 50%, #30d158 100%); opacity: 0.35; }
+.broken-line::before, .broken-line::after { content: ""; position: absolute; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: #ff453a; }
+.broken-line::after { right: 0; background: #30d158; }
+.gap { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); width: 40px; height: 14px; background: #000; }
+.left-caption { margin-top: 40px; font-size: 24px; color: #ff453a; font-weight: 500; }
+
+/* Right side: OpenClaw Framework */
+.right-panel { position: absolute; left: 1040px; top: 320px; width: 820px; }
+.pipeline { display: flex; align-items: center; gap: 18px; margin-top: 10px; }
+.stage { width: 156px; height: 156px; border-radius: 28px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.stage-name { font-size: 26px; font-weight: 600; color: #fff; }
+.stage-desc { font-size: 14px; color: #a1a1a6; margin-top: 6px; }
+.arrow { width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 14px solid rgba(255,255,255,0.25); }
+.right-caption { margin-top: 50px; font-size: 24px; color: #2997ff; font-weight: 500; }
+
+/* Center bridge */
+.bridge { position: absolute; left: 900px; top: 500px; width: 120px; height: 4px; background: linear-gradient(90deg, #ff453a 0%, #2997ff 100%); border-radius: 2px; }
+.bridge::after { content: "→"; position: absolute; right: -4px; top: -14px; color: #2997ff; font-size: 24px; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">OpenClaw 解决什么问题？</div>
+  <div class="subtitle">在 LLM 无状态的前提下，搭建一条可控制的能力链</div>
+
+  <div class="bridge"></div>
+
+  <div class="left-panel">
+    <div class="section-label">Stateless LLM</div>
+    <div class="bubbles">
+      <div class="bubble b1">每次请求都是独立的</div>
+      <div class="bubble b2">没有长期记忆</div>
+      <div class="bubble b3">不会主动调用工具</div>
+      <div class="broken-line"><div class="gap"></div></div>
+    </div>
+    <div class="left-caption">断裂的链条：对话、记忆、工具彼此隔离</div>
+  </div>
+
+  <div class="right-panel">
+    <div class="section-label">OpenClaw Framework</div>
+    <div class="pipeline">
+      <div class="stage"><div class="stage-name">Inject</div><div class="stage-desc">注入上下文</div></div>
+      <div class="arrow"></div>
+      <div class="stage"><div class="stage-name">Assemble</div><div class="stage-desc">拼装 Prompt</div></div>
+      <div class="arrow"></div>
+      <div class="stage"><div class="stage-name">Extend</div><div class="stage-desc">挂载 Skills</div></div>
+      <div class="arrow"></div>
+      <div class="stage"><div class="stage-name">Persist</div><div class="stage-desc">持久化记忆</div></div>
+    </div>
+    <div class="right-caption">闭环：把无状态的 LLM 变成可控的 Agent 引擎</div>
+  </div>
+</div>
+</body>
+</html>

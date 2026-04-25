@@ -1,0 +1,38 @@
+---
+task_id: 2026-04-03-002
+title: "任务记录"
+status: DRAFTING
+owner: agent-radar-desk
+created_at: "2026-04-13T15:16:22+0800"
+updated_at: "2026-04-13T15:16:22+0800"
+---
+
+## 状态
+- status: DRAFTING
+
+## 迁移信息
+- source: /Volumes/zhangstExtern/openclaw/workspace/agent-radar-desk/tasks/2026-04-03-002-task/legacy/2026-04-03-002.md
+
+## Legacy Notes
+
+# 任务记录
+
+## 2026-04-03-002: 微信公众号内容质量优化与发布链路重构（Agent 自主网页操作版）
+
+### 任务信息
+- **task_id**: 2026-04-03-002
+- **标题**: 微信公众号内容质量优化与发布链路重构（Agent 自主网页操作版）
+- **类型**: 技能与流程重构
+- **状态**: DRAFTING
+
+### 本轮改动
+- 新增 OpenClaw 风格技能清单：`skills/_manifest.yaml`
+- 新增技能定义：`skills/publish-wechat/SKILL.md`
+- 新增模板：`skills/publish-wechat/templates/tech-blog.md`、`news-brief.md`
+- 新增状态文件：`memory/publish-wechat/state.yaml`
+- 升级发布脚本：`tools/publish_wechat.sh`（publish/saved/resume/status）
+- 更新工具文档：`tools/README.md`
+
+### 下一步
+- 用真实稿件执行一次 `publish -> saved` 演练
+- 根据实际口令与中断恢复体验微调触发关键词

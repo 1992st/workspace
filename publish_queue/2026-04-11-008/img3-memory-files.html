@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1200px;
+  height: 800px;
+  font-family: "PingFang SC", "Microsoft YaHei", "SF Mono", "Consolas", monospace;
+  background: #fafafa;
+  color: #333;
+  padding: 50px;
+}
+.main-title {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40px;
+  color: #1a1a1a;
+}
+.container {
+  display: flex;
+  gap: 40px;
+}
+.fs-box {
+  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 30px;
+  border-top: 4px solid;
+}
+.fs-box.claude { border-color: #ef4444; }
+.fs-box.openclaw { border-color: #3b82f6; }
+.fs-header {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fs-sub {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 24px;
+}
+.tree-line {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #444;
+  font-family: "SF Mono", "Consolas", monospace;
+  white-space: pre;
+}
+.tree-line .dir { color: #3b82f6; }
+.tree-line .file { color: #10b981; }
+.tree-line .comment { color: #94a3b8; font-style: italic; }
+.tree-line .highlight-claude { background: rgba(239,68,68,0.08); padding: 2px 6px; border-radius: 4px; }
+.tree-line .highlight-openclaw { background: rgba(59,130,246,0.08); padding: 2px 6px; border-radius: 4px; }
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.tag-claude { background: rgba(239,68,68,0.1); color: #dc2626; }
+.tag-openclaw { background: rgba(59,130,246,0.1); color: #2563eb; }
+</style>
+</head>
+<body>
+<div class="main-title">文件布局与数据结构对比</div>
+<div class="container">
+  <div class="fs-box claude">
+    <div class="fs-header">Claude Code<span class="tag tag-claude">纯 Markdown</span></div>
+    <div class="fs-sub">~/.claude/projects/&lt;project&gt;/memory/</div>
+    <div class="tree-line">
+<span class="dir">~/.claude/projects/&lt;project&gt;/memory/</span>
+├── <span class="file highlight-claude">MEMORY.md</span>              <span class="comment">← 索引（200行轻量目录）</span>
+├── <span class="dir">logs/</span>
+│   └── <span class="dir">YYYY/MM/...</span>          <span class="comment">← 日常日志（assistant模式）</span>
+├── <span class="file">frontend-refactor.md</span>   <span class="comment">← topic 记忆正文</span>
+├── <span class="file">api-design.md</span>          <span class="comment">← topic 记忆正文</span>
+└── <span class="file">user-preferences.md</span>    <span class="comment">← topic 记忆正文</span>
+    </div>
+    <div style="margin-top: 24px; padding: 16px; background: rgba(239,68,68,0.04); border-radius: 10px; font-size: 13px; line-height: 1.6; color: #555;">
+      <strong style="color: #b91c1c;">特点：</strong>没有额外的机器状态文件。所有整理决策由 LLM 子代理完成，输出全是人类可读的 markdown。
+    </div>
+  </div>
+
+  <div class="fs-box openclaw">
+    <div class="fs-header">OpenClaw<span class="tag tag-openclaw">Markdown + JSON</span></div>
+    <div class="fs-sub">&lt;workspace&gt;/</div>
+    <div class="tree-line">
+<span class="dir">&lt;workspace&gt;/</span>
+├── <span class="file highlight-openclaw">MEMORY.md</span>              <span class="comment">← 长期记忆（直接注入prompt）</span>
+├── <span class="file">memory/2026-04-11.md</span>   <span class="comment">← 日常笔记</span>
+├── <span class="file">DREAMS.md</span>              <span class="comment">← Dream Diary（给人读的）</span>
+└── <span class="dir">memory/.dreams/</span>
+    ├── <span class="file">short-term-recall.json</span>     <span class="comment">← 召回记录数据库</span>
+    ├── <span class="file">phase-signals.json</span>         <span class="comment">← light/REM 强化信号</span>
+    ├── <span class="file">daily-ingestion.json</span>       <span class="comment">← 每日摄取状态</span>
+    ├── <span class="file">session-ingestion.json</span>     <span class="comment">← 会话摄取状态</span>
+    ├── <span class="dir">session-corpus/</span>
+    │   └── <span class="file">2026-04-11.txt</span>       <span class="comment">← 提取的会话语料</span>
+    └── <span class="file">short-term-promotion.lock</span>  <span class="comment">← 文件锁</span>
+    </div>
+    <div style="margin-top: 24px; padding: 16px; background: rgba(59,130,246,0.04); border-radius: 10px; font-size: 13px; line-height: 1.6; color: #555;">
+      <strong style="color: #1d4ed8;">特点：</strong>用 JSON store 记录所有量化数据。Dreaming 的决策由算法驱动，DREAMS.md 只供人类 review。
+    </div>
+  </div>
+</div>
+</body>
+</html>

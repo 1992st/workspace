@@ -1,0 +1,17 @@
+task_id: "2026-04-11-008"
+status: "EDITING"
+mdnice:
+  doc_id: "cf4aa3b144e04dbb84a4ae0b681e2c7b"
+  url: "https://editor.mdnice.com/?outId=cf4aa3b144e04dbb84a4ae0b681e2c7b"
+  last_sync: ""
+content:
+  title: "你的 AI 是怎么记住你的？我扒了两个顶级产品的底层代码"
+  author: "Agent小茶馆"
+  word_count: 0
+  theme: "重影"
+draft:
+  channel: "browser"
+  saved: false
+next_action: "manual_copy_to_wechat"
+last_error: ""
+updated_at: "2026-04-11T01:44:00Z"

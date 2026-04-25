@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微软AI文章配图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 40px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .image-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .image-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 图1：三层结构金字塔 */
+        .pyramid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pyramid-layer {
+            text-align: center;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .layer-top {
+            background: #3b82f6;
+            width: 200px;
+        }
+        
+        .layer-middle {
+            background: #6366f1;
+            width: 300px;
+        }
+        
+        .layer-bottom {
+            background: #8b5cf6;
+            width: 400px;
+        }
+        
+        .layer-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+        
+        .layer-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .layer-desc {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        
+        .arrow-down {
+            color: #999;
+            font-size: 20px;
+            margin: -4px 0;
+        }
+        
+        /* 图2：股价对比 */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .chart-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .company-name {
+            width: 80px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .bar-container {
+            flex: 1;
+            height: 32px;
+            background: #f3f4f6;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar {
+            height: 100%;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            min-width: 60px;
+        }
+        
+        .bar-green {
+            background: #10b981;
+        }
+        
+        .bar-yellow {
+            background: #f59e0b;
+        }
+        
+        .bar-red {
+            background: #ef4444;
+        }
+        
+        .rank {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        
+        .rank-gold {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .rank-silver {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .rank-bronze {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+        
+        .rank-normal {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .rank-last {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        /* 图3：三家公司对比 */
+        .compare-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        
+        .company-card {
+            flex: 1;
+            text-align: center;
+            padding: 24px 16px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .company-card.openai {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        
+        .company-card.google {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .company-card.microsoft {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+        
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .logo-openai {
+            background: #10b981;
+            color: white;
+        }
+        
+        .logo-google {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .logo-microsoft {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .company-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .company-items {
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        
+        .item-yes {
+            color: #059669;
+        }
+        
+        .item-no {
+            color: #dc2626;
+        }
+        
+        .item-partial {
+            color: #d97706;
+        }
+        
+        .screenshot-tip {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 30px; color: #1f2937;">文章配图生成器</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 40px;">请对每个卡片截图，然后插入到文章中对应位置</p>
+        
+        <!-- 图1：三层结构金字塔 -->
+        <div class="image-card">
+            <div class="image-title">图1：微软AI版图的三层结构</div>
+            <div class="pyramid-container">
+                <div class="pyramid-layer layer-top">
+                    <div class="layer-label">第一层</div>
+                    <div class="layer-title">应用层</div>
+                    <div class="layer-desc">GitHub Copilot ✅ | M365 Copilot ❌</div>
+                </div>
+                <div class="arrow-down">▼</div>
+                <div class="pyramid-layer layer-middle">
+                    <div class="layer-label">第二层</div>
+                    <div class="layer-title">平台层</div>
+                    <div class="layer-desc">Azure AI Foundry（AI模型"超市"）</div>
+                </div>
+                <div class="arrow-down">▼</div>
+                <div class="pyramid-layer layer-bottom">
+                    <div class="layer-label">第三层</div>
+                    <div class="layer-title">基础设施层</div>
+                    <div class="layer-desc">英伟达GPU + Azure数据中心 + Maia芯片(2026?)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图2：股价对比 -->
+        <div class="image-card">
+            <div class="image-title">图2：2025年至今五大科技巨头股价表现</div>
+            <div class="chart-container">
+                <div class="chart-row">
+                    <div class="rank rank-gold">🥇</div>
+                    <div class="company-name">Google</div>
+                    <div class="bar-container">
+                        <div class="bar bar-green" style="width: 100%;">+63%</div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="rank rank-silver">🥈</div>
+                    <div class="company-name">Nvidia</div>
+                    <div class="bar-container">
+                        <div class="bar bar-green" style="width: 52%;">+33%</div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="rank rank-bronze">🥉</div>
+                    <div class="company-name">Meta</div>
+                    <div class="bar-container">
+                        <div class="bar bar-yellow" style="width: 15%; padding-left: 8px;">-1.6%</div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="rank rank-normal">4</div>
+                    <div class="company-name">Amazon</div>
+                    <div class="bar-container">
+                        <div class="bar bar-yellow" style="width: 20%; padding-left: 8px;">-4.9%</div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="rank rank-last">5</div>
+                    <div class="company-name">Microsoft</div>
+                    <div class="bar-container">
+                        <div class="bar bar-red" style="width: 25%; padding-left: 8px;">-6.8%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图3：三家公司对比 -->
+        <div class="image-card">
+            <div class="image-title">图3：三家公司的AI布局对比</div>
+            <div class="compare-container">
+                <div class="company-card openai">
+                    <div class="company-logo logo-openai">O</div>
+                    <div class="company-title">OpenAI</div>
+                    <div class="company-items">
+                        <div class="item-no">❌ 芯片（租Azure）</div>
+                        <div class="item-yes">✅ 模型（GPT自研）</div>
+                        <div class="item-yes">✅ 产品（ChatGPT）</div>
+                        <div style="margin-top: 8px; font-weight: 600; color: #059669;">端到端控制</div>
+                    </div>
+                </div>
+                <div class="company-card google">
+                    <div class="company-logo logo-google">G</div>
+                    <div class="company-title">Google</div>
+                    <div class="company-items">
+                        <div class="item-yes">✅ 芯片（TPU第7代）</div>
+                        <div class="item-yes">✅ 模型（Gemini）</div>
+                        <div class="item-yes">✅ 产品（搜索）</div>
+                        <div style="margin-top: 8px; font-weight: 600; color: #2563eb;">全产业链自主</div>
+                    </div>
+                </div>
+                <div class="company-card microsoft">
+                    <div class="company-logo logo-microsoft">M</div>
+                    <div class="company-title">Microsoft</div>
+                    <div class="company-items">
+                        <div class="item-partial">⚠️ 芯片（买/推迟）</div>
+                        <div class="item-no">❌ 模型（OpenAI的）</div>
+                        <div class="item-partial">⚠️ 产品（仅1个成功）</div>
+                        <div style="margin-top: 8px; font-weight: 600; color: #d97706;">拼图模式</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="screenshot-tip">
+            💡 操作提示：按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图每个卡片，<br>
+            或使用浏览器开发者工具(F12) → 右键元素 → "截取节点屏幕截图"
+        </div>
+    </div>
+</body>
+</html>

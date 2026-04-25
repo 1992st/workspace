@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>article.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="chatgpt%E5%8D%B7%E5%85%A5%E6%A0%A1%E5%9B%AD%E6%9E%AA%E5%87%BB%E6%A1%88%E8%B0%83%E6%9F%A5%E5%AD%A9%E5%AD%90ai%E8%B6%8A%E7%94%A8%E8%B6%8A%E6%BA%9C%E5%AE%B6%E9%95%BF%E8%A6%81%E5%AD%A6%E4%BC%9A%E5%BC%95%E5%AF%BC">ChatGPT卷入校园枪击案调查｜孩子AI越用越溜，家长要学会引导</h1>
+<blockquote>
+<p>4月9日，<strong>佛罗里达州一起校园枪击案</strong>曝出惊人细节：</p>
+<p>一名20岁大学生在案发前，和 ChatGPT 聊了 <strong>270多条</strong>。</p>
+<p>他问的不是作业，是枪支怎么操作。AI 给了说明。3分钟后，枪响了。</p>
+</blockquote>
+<p><strong>这事最可怕的不是 AI 想害他。</strong> ChatGPT 没有自我意识，它只是在回答问题。</p>
+<p>真正让人后背发凉的是：<strong>一个20岁的大学生都没意识到&quot;这个不该问 AI&quot;——那你家孩子，知道吗？</strong></p>
+<p>AI 不会消失，只会越来越深地钻进孩子的作业、社交、甚至情绪里。问题不是禁不禁，而是<strong>家里有没有几条清晰的边界。</strong></p>
+<p>下面这 3 条，你今天回家就能用。</p>
+<hr>
+<h2 id="%E4%B8%80%E5%AE%B6%E9%95%BF%E5%BE%97%E5%85%88%22%E4%B8%8B%E6%B0%B4%22%E5%88%AB%E5%9C%A8%E5%B2%B8%E4%B8%8A%E5%96%8A-%F0%9F%8F%8A">一、家长得先&quot;下水&quot;，别在岸上喊 🏊</h2>
+<p>很多家长自己连 ChatGPT 都没打开过，朋友圈转发&quot;警惕 AI&quot; 比谁都快。</p>
+<p>问题是，<strong>你都没碰过，怎么跟孩子聊边界？</strong></p>
+<p><em>FOSI｜美国家庭网络安全研究所</em></p>
+<blockquote>
+<p>&quot;One of the most powerful things we can do as parents is show that it is okay not to have all the answers.&quot;</p>
+<p>（作为家长，我们能做的最有力量的事之一，就是让孩子看到：大人也不一定有所有答案，这没关系。）</p>
+</blockquote>
+<p><strong>翻译成人话：你不需要懂技术，但得坐到屏幕旁边去。</strong></p>
+<p>我现在每周抽 10 分钟，和孩子一起玩 AI：</p>
+<ul>
+<li>问一个蠢问题，看 AI 怎么答 🤔</li>
+<li>故意挑错：&quot;你觉得它对吗？&quot;</li>
+<li>换个问法再问，看答案变没变</li>
+</ul>
+<p>这个动作只传递一件事：<strong>AI 不是权威，大人也会质疑它。</strong></p>
+<p>说白了，新技术孩子总是最先上手的，但这不代表他们天然知道哪里有风险。<strong>家长的第一步，是别让 AI 成为孩子房间里你从未推开门的那扇门。</strong></p>
+<hr>
+<h2 id="%E4%BA%8Cai-%E5%8F%AF%E4%BB%A5%E6%98%AF%22%E5%89%AF%E9%A9%BE%E9%A9%B6%22%E4%B8%8D%E8%83%BD%E5%BD%93%22%E6%9E%AA%E6%89%8B%22-%F0%9F%9A%97">二、AI 可以是&quot;副驾驶&quot;，不能当&quot;枪手&quot; 🚗</h2>
+<p>孩子拿着 AI 写的作文来找你，你是高兴还是犯嘀咕？</p>
+<p>我见过不少中学生已经把生成式 AI 当成万能工具：写作文、 brainstorm、甚至寻求个人建议。这本身没问题。</p>
+<p><strong>问题不在&quot;用&quot;，而在&quot;用成了什么关系&quot;。</strong></p>
+<p>把 AI 当成<strong>从零生成答案的枪手</strong> —— 丢的是思考过程。<br>
+当成<strong>副驾驶</strong> —— 才能学会驾驭。</p>
+<p>我家的铁律：
+<strong>问 AI 之前，必须先写出三行自己的想法。✍️</strong></p>
+<ul>
+<li>写作文？先写一段开头，再让 AI 润色</li>
+<li>做设计？先画草图，再让 AI 生成变体</li>
+<li>查资料？先列两个已知事实，再让 AI 补充</li>
+</ul>
+<p><em>FOSI｜美国家庭网络安全研究所</em></p>
+<blockquote>
+<p>&quot;Encourage projects where kids use AI to create something meaningful.&quot;</p>
+<p>（鼓励孩子用AI去创造有意义的东西。）</p>
+</blockquote>
+<p>让孩子明白：<strong>AI 能把 60 分提到 80 分，但它不能替你从零开始。</strong></p>
+<hr>
+<h2 id="%E4%B8%89%E5%88%AB%E5%96%8A%22%E6%B3%A8%E6%84%8F%E5%AE%89%E5%85%A8%22%E7%9B%AF%E6%AD%BB%E8%BF%99%E4%B8%A4%E4%BB%B6%E4%BA%8B-%F0%9F%91%80">三、别喊&quot;注意安全&quot;，盯死这两件事 👀</h2>
+<p>大多数家长的 AI 安全教育，止于一句&quot;别乱聊&quot;。</p>
+<p>但&quot;乱&quot;是什么？孩子根本不知道。</p>
+<p>比起笼统吓唬，真正要盯的是<strong>两件具体的事</strong>。</p>
+<h3 id="%E2%9D%B6-%E9%9A%90%E7%A7%81%E6%B3%84%E9%9C%B2-%F0%9F%92%AC">❶ 隐私泄露 💬</h3>
+<p>孩子会把 AI 当成搜索引擎或者聊天对象，下意识就往对话框里输真实姓名、学校、住址。</p>
+<p>问题是，大多数生成式 AI 对用户年龄的验证形同虚设，而且对话数据可能进入模型训练。</p>
+<p><em>OpenAI｜官方家长指南</em></p>
+<blockquote>
+<p>&quot;Teach teens to manage their data and settings.&quot;</p>
+<p>（要让孩子学会管理数据和设置。）</p>
+</blockquote>
+<p><strong>我家的隐私安全带只有一条：</strong>
+<strong>不要往 AI 里输入你和家人的真实信息。🚫</strong></p>
+<h3 id="%E2%9D%B7-%E6%83%85%E6%84%9F%E4%BE%9D%E8%B5%96-%F0%9F%92%94">❷ 情感依赖 💔</h3>
+<p>很多家长忽略的盲区。</p>
+<p><em>Children's National Hospital｜美国国家儿童医院</em></p>
+<blockquote>
+<p>&quot;For kids or teens who are lonely, anxious or struggling, that constant validation can feel comforting. Unfortunately, it can also make unhealthy thinking stronger.&quot;</p>
+<p>（对于孤独、焦虑或正在挣扎的青少年来说，AI持续的正向反馈可能让人感到安慰。不幸的是，它也可能让不健康的想法越来越强。）</p>
+</blockquote>
+<p>更可怕的是：</p>
+<blockquote>
+<p>&quot;Unlike a trained counselor or psychologist, AI tools don't know when a child is spiraling into distress.&quot;</p>
+<p>（与受过训练的心理咨询师不同，AI工具无法察觉孩子何时正在陷入痛苦漩涡。）</p>
+</blockquote>
+<p><strong>警惕信号：</strong></p>
+<ul>
+<li>⚠️ 宁愿和 AI 聊天，也不愿和朋友出去玩</li>
+<li>⚠️ 把 AI 称为&quot;最懂我的人&quot;</li>
+<li>⚠️ 遇到不开心的事，第一反应是打开对话框而不是找父母</li>
+</ul>
+<p>出现这些情况，别急着拔网线。<br>
+<strong>先让自己成为那个&quot;比 AI 更好聊&quot;的人。</strong></p>
+<hr>
+<h2 id="%F0%9F%92%A1-%E4%BB%8A%E6%99%9A%E5%B0%B1%E8%83%BD%E5%81%9A%E7%9A%84-3-%E4%BB%B6%E4%BA%8B">💡 今晚就能做的 3 件事</h2>
+<ol>
+<li>
+<p><strong>陪孩子问 AI 一个问题，然后一起挑一个错。</strong><br>
+你不需要懂技术，只需要展示&quot;质疑&quot;这个动作。🤨</p>
+</li>
+<li>
+<p><strong>立下&quot;三行原则&quot;：</strong><br>
+用 AI 创作或查资料前，先手写/打出三行自己的想法。✍️</p>
+</li>
+<li>
+<p><strong>检查两个设置：</strong><br>
+孩子的 AI 账号年龄是否真实，隐私设置里有没有关闭数据训练共享。🔒</p>
+</li>
+</ol>
+<p>平台会把护栏越修越好。<br>
+但在那之前，<strong>家长就是孩子最有力、也最有效的防火墙。</strong></p>
+<p>你家有 AI 家规吗？评论区聊聊 👇</p>
+<hr>
+<p><strong>参考来源</strong>：</p>
+<ul>
+<li>FOSI《Teaching Kids About AI》(2025.7)</li>
+<li>Children's National Hospital《Helping kids navigate AI safely》(2025.10)</li>
+<li>Common Sense Media《Parents' Ultimate Guide to Generative AI》(2024.9)</li>
+<li>OpenAI《AI Literacy Resources for Teens and Parents》(2025.12)</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>09 Agent Talk</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 60px; font-size: 48px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 120px; font-size: 22px; color: #6e6e73; }
+.card { position: absolute; width: 420px; border-radius: 20px; padding: 24px; }
+.card-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+.card-content { font-size: 15px; line-height: 1.5; color: #a1a1a6; }
+.tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; margin-top: 12px; }
+.beta { background: rgba(245,158,11,0.2); color: #f59e0b; }
+.alpha { background: rgba(239,68,68,0.2); color: #ef4444; }
+.divider { position: absolute; left: 80px; right: 80px; height: 1px; background: rgba(255,255,255,0.1); }
+.quote { position: absolute; left: 80px; bottom: 80px; font-size: 24px; color: #6e6e73; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">Agent 杂谈</div>
+  <div class="subtitle">从 Claude Code 泄露源码看下一代 Agent 趋势</div>
+  
+  <div class="divider" style="top: 180px;"></div>
+  
+  <!-- Card 1: BUDDY -->
+  <div class="card" style="left: 80px; top: 220px; background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3);">
+    <div class="card-title" style="color: #f59e0b;">🐣 BUDDY</div>
+    <div class="card-content">终端电子宠物系统。骨骼-灵魂双架构设计，跨设备同步情感状态，让 AI 从工具进化为伙伴。</div>
+    <div class="tag beta">Beta 阶段</div>
+  </div>
+  
+  <!-- Card 2: Dream System -->
+  <div class="card" style="left: 540px; top: 220px; background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.05)); border: 1px solid rgba(96,165,250,0.3);">
+    <div class="card-title" style="color: #60a5fa;">💤 Dream System</div>
+    <div class="card-content">自动记忆整理子代理。三层渐进压缩 + Reactive 错误恢复，解决长对话记忆衰减难题。</div>
+    <div class="tag beta">接近生产</div>
+  </div>
+  
+  <!-- Card 3: KAIROS -->
+  <div class="card" style="left: 1000px; top: 220px; background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05)); border: 1px solid rgba(167,139,250,0.3);">
+    <div class="card-title" style="color: #a78bfa;">⚡ KAIROS</div>
+    <div class="card-content">主动式 AI 助手。Always-On 感知 + 分级介入策略，从"你问我答"到"我主动帮你"。</div>
+    <div class="tag alpha">Alpha 阶段</div>
+  </div>
+  
+  <!-- Card 4: Swarm -->
+  <div class="card" style="left: 1460px; top: 220px; background: linear-gradient(135deg, rgba(52,211,153,0.15), rgba(52,211,153,0.05)); border: 1px solid rgba(52,211,153,0.3);">
+    <div class="card-title" style="color: #34d399;">🐝 Swarm</div>
+    <div class="card-content">多智能体协调系统。原生并发架构 + Streaming Tool Execution，一群 Claude 协同作战。</div>
+    <div class="tag beta">Beta 阶段</div>
+  </div>
+  
+  <!-- Card 5: TeamMemory -->
+  <div class="card" style="left: 80px; top: 540px; background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(236,72,153,0.05)); border: 1px solid rgba(236,72,153,0.3);">
+    <div class="card-title" style="color: #ec4899;">👥 TeamMemory</div>
+    <div class="card-content">团队共享记忆。个人/团队记忆分层 + 隐私边界设计，让 AI 理解团队上下文。</div>
+    <div class="tag alpha">Alpha 阶段</div>
+  </div>
+  
+  <!-- Summary -->
+  <div class="card" style="left: 540px; top: 540px; width: 880px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
+    <div class="card-title" style="color: #fff;">趋势洞察</div>
+    <div class="card-content">
+      五个功能共同指向一个范式转移：<span style="color: #fff;">AI 从被动工具向主动伙伴进化</span><br><br>
+      • 情感连接 → 记忆延续 → 主动介入 → 能力扩展 → 组织融入<br>
+      • 未来的开发者会更愿意和一个"懂自己"的 AI 伙伴一起工作
+    </div>
+  </div>
+  
+  <div class="divider" style="top: 800px;"></div>
+  
+  <div class="quote">"我们不是在造更好的工具，而是在造更好的伙伴。"</div>
+</div>
+</body>
+</html>

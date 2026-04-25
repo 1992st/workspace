@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, initial-scale=1.0">
+  <title>XChat 功能与争议</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      width: 1080px;
+      min-height: 1920px;
+      padding: 60px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #1d9bf0 0%, #1a8cd8 100%);
+      color: #fff;
+      padding: 10px 28px;
+      border-radius: 30px;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+    .title {
+      font-size: 68px;
+      font-weight: 900;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 30px;
+      color: #8888a0;
+      font-weight: 500;
+    }
+    .launch-date {
+      margin-top: 24px;
+      font-size: 26px;
+      color: #1d9bf0;
+      font-weight: 700;
+    }
+    .section {
+      margin-bottom: 44px;
+    }
+    .section-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      padding-left: 18px;
+      border-left: 6px solid #1d9bf0;
+    }
+    .section-title.warning {
+      border-left-color: #f4212e;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 28px;
+    }
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+      background: rgba(29,155,240,0.12);
+    }
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .card-desc {
+      font-size: 18px;
+      color: #a0a0b0;
+      line-height: 1.6;
+    }
+    .warning-card {
+      background: rgba(244,33,46,0.06);
+      border: 1px solid rgba(244,33,46,0.18);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+    .warning-card .card-icon {
+      background: rgba(244,33,46,0.12);
+    }
+    .warning-card .card-title {
+      color: #ff6b74;
+    }
+    .vs-bar {
+      background: rgba(255,255,255,0.03);
+      border-radius: 24px;
+      padding: 36px;
+      margin-top: 20px;
+    }
+    .vs-title {
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 28px;
+      color: #ddd;
+    }
+    .vs-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .vs-row:last-child { border-bottom: none; }
+    .vs-label {
+      font-size: 20px;
+      color: #8888a0;
+      width: 140px;
+    }
+    .vs-xchat, .vs-wechat {
+      font-size: 20px;
+      font-weight: 600;
+      width: 320px;
+      text-align: center;
+    }
+    .vs-xchat { color: #1d9bf0; }
+    .vs-wechat { color: #07c160; }
+    .vs-mid {
+      font-size: 18px;
+      color: #555;
+      width: 60px;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 20px;
+      color: #666;
+    }
+    .footer .brand {
+      font-size: 24px;
+      font-weight: 700;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="badge">马斯克新作 · 即将上线</div>
+    <div class="title">XChat 功能全解密</div>
+    <div class="subtitle">号称"西方微信"，究竟是超级 App，还是高级版 Telegram？</div>
+    <div class="launch-date">🚀 正式上线：2026年4月17日（周五）· App Store</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">核心功能一览</div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">🔐</div>
+        <div class="card-title">端到端加密</div>
+        <div class="card-desc">官方宣称 E2E 加密，无广告、无追踪</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <div class="card-title">Grok AI 集成</div>
+        <div class="card-desc">聊天界面直接调用 AI 完成任务</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💣</div>
+        <div class="card-title">阅后即焚</div>
+        <div class="card-desc">10秒 ~ 1周 自定义时效，查看后自动销毁</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚫</div>
+        <div class="card-title">截图拦截</div>
+        <div class="card-desc">阻止截图操作，或实时触发截屏提醒</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📹</div>
+        <div class="card-title">音视频通话</div>
+        <div class="card-desc">无需手机号，绑定 X 账号即可使用</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <div class="card-title">灵活消息管理</div>
+        <div class="card-desc">双向删除、发出后编辑、群聊、文件共享</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title warning">⚠️ 隐私争议与纰漏</div>
+    <div class="warning-card">
+      <div class="card-icon">🚨</div>
+      <div class="card-title">"比特币式加密"遭质疑</div>
+      <div class="card-desc">安全研究者指出：比特币加密是用于身份验证，而聊天加密要解决的是保密性，两者目标完全不同。</div>
+    </div>
+    <div class="warning-card">
+      <div class="card-icon">📋</div>
+      <div class="card-title">App Store 隐私标签自相矛盾</div>
+      <div class="card-desc">声称"无追踪"，但隐私标签显示仍会收集：位置信息、通讯录、搜索记录、用户身份标识，且与真实身份挂钩。</div>
+    </div>
+    <div class="warning-card">
+      <div class="card-icon">🔓</div>
+      <div class="card-title">缺乏独立安全审计</div>
+      <div class="card-desc">Signal 的加密协议经过多轮公开审计，代码完全开源；XChat 目前没有任何独立审计报告，"安全"全靠自说自话。</div>
+    </div>
+    <div class="warning-card">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">无前向保密（Forward Secrecy）</div>
+      <div class="card-desc">同类产品中唯一由平台方持有密钥、且缺乏前向保密的应用。一旦密钥泄露，历史消息可能被解密。</div>
+    </div>
+  </div>
+
+  <div class="vs-bar">
+    <div class="vs-title">XChat vs 微信：差距在哪？</div>
+    <div class="vs-row">
+      <div class="vs-label">核心定位</div>
+      <div class="vs-xchat">加密通讯工具</div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-wechat">超级生活操作系统</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-label">支付体系</div>
+      <div class="vs-xchat">❌ 暂无</div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-wechat">✅ 微信支付 + 小程序</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-label">第三方生态</div>
+      <div class="vs-xchat">❌ 暂无</div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-wechat">✅ 公众号 / 小程序 / 视频号</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-label">熟人关系链</div>
+      <div class="vs-xchat">⚠️ 依赖 X 平台</div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-wechat">✅ 深度沉淀十余年</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-label">信任基础</div>
+      <div class="vs-xchat">⚠️ 独立审计缺失</div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-wechat">✅ 经过多年监管与验证</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>数据来源：36氪、虎嗅、Engadget、9to5Mac、App Store 等公开报道</div>
+    <div style="margin-top:6px; font-size:16px; color:#555;">2026年4月14日整理</div>
+  </div>
+</body>
+</html>

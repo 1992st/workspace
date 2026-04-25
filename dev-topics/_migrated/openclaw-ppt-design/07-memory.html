@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>07 Memory</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 60px; font-size: 56px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 135px; font-size: 26px; color: #a1a1a6; font-weight: 400; }
+
+/* Central pipeline */
+.pipeline { position: absolute; left: 80px; top: 240px; width: 1760px; display: flex; align-items: flex-start; gap: 40px; }
+
+/* Stage box generic */
+.stage-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 28px; }
+.stage-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 18px; }
+.stage-arrow { margin-top: 110px; color: rgba(255,255,255,0.25); font-size: 28px; }
+
+/* Files stage */
+.files-stage { width: 340px; }
+.file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #a78bfa; }
+.file-name { font-size: 15px; color: #f5f5f7; font-family: "SF Mono", Menlo, monospace; }
+.file-meta { font-size: 12px; color: #6e6e73; margin-left: auto; }
+
+/* Chunk stage */
+.chunk-stage { width: 380px; }
+.chunk-visual { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chunk { width: 44px; height: 44px; background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a78bfa; font-family: "SF Mono", Menlo, monospace; }
+.chunk-label { font-size: 14px; color: #86868b; }
+.chunk-label code { color: #a78bfa; font-family: "SF Mono", Menlo, monospace; }
+
+/* Search stage */
+.search-stage { width: 420px; position: relative; }
+.search-eye { width: 120px; height: 120px; border: 2px solid rgba(255,255,255,0.14); border-radius: 50%; margin: 0 auto 24px; position: relative; }
+.search-pupil { width: 48px; height: 48px; background: #a78bfa; border-radius: 50%; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0.9; }
+.search-rays { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; transform: translate(-50%, -50%); }
+.search-ray { position: absolute; left: 50%; top: 50%; width: 2px; height: 70px; background: rgba(167,139,250,0.25); transform-origin: top center; }
+.search-desc { text-align: center; font-size: 18px; color: #d1d1d6; line-height: 1.5; }
+.search-desc strong { color: #a78bfa; font-weight: 500; }
+
+/* Backend badges */
+.backends { display: flex; gap: 14px; margin-top: 20px; justify-content: center; }
+.badge { padding: 8px 16px; border-radius: 20px; font-size: 14px; border: 1px solid rgba(255,255,255,0.1); }
+.badge.b1 { background: rgba(48,209,88,0.08); border-color: rgba(48,209,88,0.25); color: #30d158; }
+.badge.b2 { background: rgba(41,151,255,0.08); border-color: rgba(41,151,255,0.25); color: #2997ff; }
+
+/* Prompt rule stage */
+.rule-stage { width: 460px; }
+.rule-card { background: rgba(20,20,25,0.9); border: 1px solid rgba(50,50,60,0.8); border-radius: 16px; padding: 20px 24px; font-family: "SF Mono", Menlo, monospace; font-size: 15px; color: #c1c1c6; line-height: 1.6; }
+.rule-card .cm { color: #6e6e73; }
+.rule-card .kw { color: #ff7aa2; }
+
+/* Register label */
+.register-label { position: absolute; left: 80px; top: 640px; font-size: 18px; color: #86868b; }
+.register-label code { color: #30d158; font-family: "SF Mono", Menlo, monospace; }
+
+/* Plugin slot diagram */
+.plugin-diag { position: absolute; left: 80px; top: 700px; width: 680px; display: flex; align-items: center; gap: 24px; }
+.slot-box { width: 220px; height: 90px; border-radius: 16px; background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.slot-title { font-size: 18px; font-weight: 600; color: #a78bfa; }
+.slot-sub { font-size: 13px; color: #86868b; margin-top: 4px; }
+.conn { flex: 1; height: 2px; background: rgba(255,255,255,0.1); position: relative; }
+.conn::after { content: "▸"; position: absolute; right: -6px; top: -8px; color: rgba(255,255,255,0.25); font-size: 14px; }
+.core-box { width: 220px; height: 90px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.core-title { font-size: 18px; font-weight: 600; }
+.core-sub { font-size: 13px; color: #86868b; margin-top: 4px; }
+
+/* Callout */
+.callout { position: absolute; left: 840px; top: 720px; width: 840px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px 32px; }
+.callout-title { font-size: 18px; color: #86868b; letter-spacing: 1px; margin-bottom: 12px; }
+.callout-body { font-size: 22px; line-height: 1.5; color: #f5f5f7; }
+.callout-body strong { color: #fff; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">Memory — 可替换的记忆后端</div>
+  <div class="subtitle">不是把记忆写死在框架里，而是一个可插拔的 Plugin Slot</div>
+
+  <div class="pipeline">
+    <!-- Stage 1: Persist -->
+    <div class="stage-box files-stage">
+      <div class="stage-title">1. 落盘 Files</div>
+      <div class="file-row"><div class="dot"></div><div class="file-name">MEMORY.md</div><div class="file-meta">项目级主记忆</div></div>
+      <div class="file-row"><div class="dot"></div><div class="file-name">memory/*.md</div><div class="file-meta">按日期/主题拆分</div></div>
+      <div class="file-row"><div class="dot"></div><div class="file-name">sessionFiles</div><div class="file-meta">可选对话记录</div></div>
+    </div>
+    <div class="stage-arrow">→</div>
+
+    <!-- Stage 2: Chunk -->
+    <div class="stage-box chunk-stage">
+      <div class="stage-title">2. 分块 Chunk + Hash</div>
+      <div class="chunk-visual">
+        <div class="chunk">C1</div><div class="chunk">C2</div><div class="chunk">C3</div>
+        <div class="chunk">C4</div><div class="chunk">C5</div><div class="chunk">C6</div>
+        <div class="chunk">C7</div><div class="chunk">C8</div><div class="chunk">C9</div>
+        <div class="chunk">C10</div><div class="chunk">C11</div><div class="chunk">C12</div>
+      </div>
+      <div class="chunk-label">每个 chunk 生成 <code>SHA256</code> 用于增量同步</div>
+    </div>
+    <div class="stage-arrow">→</div>
+
+    <!-- Stage 3: Retrieve -->
+    <div class="stage-box search-stage">
+      <div class="stage-title">3. 向量检索 Vector Search</div>
+      <div class="search-eye">
+        <div class="search-pupil"></div>
+        <div class="search-rays">
+          <div class="search-ray" style="transform: rotate(0deg)"></div>
+          <div class="search-ray" style="transform: rotate(45deg)"></div>
+          <div class="search-ray" style="transform: rotate(90deg)"></div>
+          <div class="search-ray" style="transform: rotate(135deg)"></div>
+          <div class="search-ray" style="transform: rotate(180deg)"></div>
+          <div class="search-ray" style="transform: rotate(225deg)"></div>
+          <div class="search-ray" style="transform: rotate(270deg)"></div>
+          <div class="search-ray" style="transform: rotate(315deg)"></div>
+        </div>
+      </div>
+      <div class="search-desc">回答前 <strong>必须先 search</strong><br>MEMORY.md + memory/*.md</div>
+      <div class="backends">
+        <div class="badge b1">builtin 向量索引</div>
+        <div class="badge b2">qmd 外部后端</div>
+      </div>
+    </div>
+    <div class="stage-arrow">→</div>
+
+    <!-- Stage 4: Prompt rule -->
+    <div class="stage-box rule-stage">
+      <div class="stage-title">4. 注入 Prompt 规则</div>
+      <div class="rule-card">
+        <span class="cm">## Memory</span><br>
+        <span class="kw">Mandatory recall step:</span><br>
+        semantically search MEMORY.md<br>
+        + memory/*.md before answering.
+      </div>
+    </div>
+  </div>
+
+  <div class="register-label">架构核心：<code>registerMemoryCapability(pluginId, capability)</code></div>
+
+  <div class="plugin-diag">
+    <div class="slot-box">
+      <div class="slot-title">Memory Plugin</div>
+      <div class="slot-sub">promptBuilder + runtime</div>
+    </div>
+    <div class="conn"></div>
+    <div class="core-box">
+      <div class="core-title">OpenClaw Core</div>
+      <div class="slot-sub">不硬编码，只预留 slot</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">设计意图</div>
+    <div class="callout-body">Memory 对 OpenClaw 框架来说是 <strong>透明的</strong>——框架只负责调用 Plugin 注册的 builder，把结果拼接进 System Prompt。你可以随时替换内置实现，接入自己的向量数据库或企业知识库。</div>
+  </div>
+</div>
+</body>
+</html>

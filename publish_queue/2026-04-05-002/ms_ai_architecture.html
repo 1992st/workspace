@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body {
+  margin: 0;
+  padding: 40px;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.container {
+  width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 60px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 50px;
+}
+.subtitle {
+  text-align: center;
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 60px;
+}
+.layer {
+  margin-bottom: 30px;
+  border-radius: 12px;
+  padding: 30px;
+  position: relative;
+}
+.layer-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.layer-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  margin-right: 15px;
+}
+.layer-title {
+  font-size: 22px;
+  font-weight: 600;
+}
+.layer-desc {
+  font-size: 14px;
+  color: #666;
+  margin-left: 55px;
+  margin-bottom: 20px;
+}
+.layer-content {
+  margin-left: 55px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid transparent;
+}
+.card-success {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+.card-fail {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+.card-neutral {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+.card-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+.card-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.card-status {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-icon {
+  font-size: 16px;
+}
+.arrow {
+  text-align: center;
+  font-size: 24px;
+  color: #999;
+  margin: 10px 0;
+}
+.arrow-label {
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+/* Layer colors */
+.layer-app {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+.layer-app .layer-number {
+  background: #3b82f6;
+  color: white;
+}
+.layer-app .layer-title {
+  color: #1e40af;
+}
+
+.layer-platform {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+}
+.layer-platform .layer-number {
+  background: #6366f1;
+  color: white;
+}
+.layer-platform .layer-title {
+  color: #3730a3;
+}
+
+.layer-infra {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+}
+.layer-infra .layer-number {
+  background: #8b5cf6;
+  color: white;
+}
+.layer-infra .layer-title {
+  color: #5b21b6;
+}
+
+.tech-badge {
+  display: inline-block;
+  background: rgba(0,0,0,0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.tech-external {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.tech-own {
+  background: #d1fae5;
+  color: #065f46;
+}
+.tech-delay {
+  background: #fef3c7;
+  color: #92400e;
+}
+.summary-box {
+  background: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  padding: 20px;
+  margin-top: 40px;
+  border-radius: 0 8px 8px 0;
+}
+.summary-title {
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 10px;
+}
+.summary-text {
+  color: #475569;
+  line-height: 1.7;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">微软AI版图的三层结构</div>
+  <div class="subtitle">GitHub Copilot 和 Azure 到底是什么关系？</div>
+
+  <!-- 应用层 -->
+  <div class="layer layer-app">
+    <div class="layer-header">
+      <div class="layer-number">1</div>
+      <div class="layer-title">应用层（你能直接用的）</div>
+    </div>
+    <div class="layer-desc">微软直接面向用户的产品，但成功率差异巨大</div>
+    <div class="layer-content">
+      <div class="card card-success">
+        <div class="card-label">AI编程助手</div>
+        <div class="card-name">GitHub Copilot</div>
+        <div class="card-status">
+          <span class="status-icon">✓</span>
+          <span>2000万用户 · 成功</span>
+        </div>
+      </div>
+      <div class="card card-fail">
+        <div class="card-label">Office AI助手</div>
+        <div class="card-name">M365 Copilot</div>
+        <div class="card-status">
+          <span class="status-icon">✗</span>
+          <span>仅3%采用率 · 失败</span>
+        </div>
+      </div>
+      <div class="card card-neutral">
+        <div class="card-label">搜索AI</div>
+        <div class="card-name">Bing AI</div>
+        <div class="card-status">
+          <span class="status-icon">△</span>
+          <span>表现一般</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-label">都跑在 ↓</div>
+  <div class="arrow">▼</div>
+
+  <!-- 平台层 -->
+  <div class="layer layer-platform">
+    <div class="layer-header">
+      <div class="layer-number">2</div>
+      <div class="layer-title">平台层（你能租到的）</div>
+    </div>
+    <div class="layer-desc">微软扮演的角色：AI模型的"房东"和"中介"</div>
+    <div class="layer-content">
+      <div class="card" style="flex: 1;">
+        <div class="card-label">模型服务平台</div>
+        <div class="card-name">Azure AI Foundry</div>
+        <div style="margin-top: 15px;">
+          <div style="font-size: 13px; color: #666; margin-bottom: 10px;">接入的模型：</div>
+          <span class="tech-badge tech-external">GPT-4 (OpenAI)</span>
+          <span class="tech-badge tech-external">Claude (Anthropic)</span>
+          <span class="tech-badge tech-external">Llama (Meta)</span>
+          <span class="tech-badge">+11,000个模型</span>
+        </div>
+        <div style="margin-top: 15px; font-size: 13px; color: #6366f1; font-weight: 500;">
+          本质：AI模型的"超市"，做渠道生意
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-label">底层是 ↓</div>
+  <div class="arrow">▼</div>
+
+  <!-- 基础设施层 -->
+  <div class="layer layer-infra">
+    <div class="layer-header">
+      <div class="layer-number">3</div>
+      <div class="layer-title">基础设施层（你看不见的）</div>
+    </div>
+    <div class="layer-desc">真正的"重资产"投入，但核心技术依赖外部</div>
+    <div class="layer-content">
+      <div class="card" style="flex: 1;">
+        <div class="card-label">算力基础设施</div>
+        <div style="margin-top: 10px;">
+          <span class="tech-badge tech-external">英伟达 GPU</span>
+          <span class="tech-badge tech-own">Azure数据中心</span>
+          <span class="tech-badge tech-delay">Maia芯片 2026年?</span>
+        </div>
+        <div style="margin-top: 15px; font-size: 14px; color: #666; line-height: 1.6;">
+          <div>• 400+ 数据中心，覆盖70个区域</div>
+          <div>• 年投入 $800-1000亿买GPU和基建</div>
+          <div>• 自研Maia芯片推迟，仍依赖英伟达</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <div class="summary-title">关键洞察：倒金字塔结构</div>
+    <div class="summary-text">
+      微软的AI布局呈现<strong>"倒金字塔"</strong>形态：越往下层，核心技术越依赖外部（英伟达、OpenAI）；
+      越往上层，自有产品成功率越低（仅GitHub Copilot成功）。<br><br>
+      这解释了为什么微软<strong>能赚AI的钱（Azure收入$750亿+）</strong>，但<strong>拿不到AI的估值（股价-6.8%垫底）</strong>——
+      它是AI浪潮的<strong>渠道商</strong>，不是<strong>规则制定者</strong>。
+    </div>
+  </div>
+</div>
+</body>
+</html>

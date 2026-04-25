@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>04 Prompt Overview</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 60px; font-size: 56px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 135px; font-size: 26px; color: #a1a1a6; font-weight: 400; }
+.layers { position: absolute; left: 80px; top: 240px; width: 1200px; }
+.layer { width: 100%; border-radius: 24px; padding: 34px 40px; margin-bottom: 18px; display: flex; align-items: center; gap: 40px; }
+.layer-pct { font-size: 52px; font-weight: 600; min-width: 130px; }
+.layer-content { flex: 1; }
+.layer-name { font-size: 28px; font-weight: 600; margin-bottom: 10px; }
+.layer-items { font-size: 20px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+.l1 { background: rgba(30,64,175,0.16); border: 1px solid rgba(48,99,209,0.35); }
+.l1 .layer-pct { color: #60a5fa; }
+.l2 { background: rgba(194,65,12,0.14); border: 1px solid rgba(234,88,12,0.35); }
+.l2 .layer-pct { color: #fb923c; }
+.l3 { background: rgba(126,34,206,0.14); border: 1px solid rgba(168,85,247,0.35); }
+.l3 .layer-pct { color: #c084fc; }
+.assembly-card { position: absolute; left: 1340px; top: 240px; width: 500px; height: 600px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; padding: 36px; }
+.card-title { font-size: 22px; color: #86868b; letter-spacing: 1px; margin-bottom: 24px; }
+.fn-name { font-family: "SF Mono", Menlo, monospace; font-size: 18px; color: #30d158; margin-bottom: 30px; }
+.step { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; font-weight: 600; flex-shrink: 0; }
+.step-text { font-size: 18px; color: #d1d1d6; line-height: 1.5; padding-top: 2px; }
+.bottom-note { position: absolute; left: 80px; top: 960px; font-size: 22px; color: #6e6e73; }
+.bottom-note strong { color: #d1d1d6; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">Prompt 总览</div>
+  <div class="subtitle">System Prompt 由三部分拼成</div>
+  <div class="layers">
+    <div class="layer l1">
+      <div class="layer-pct">~35%</div>
+      <div class="layer-content">
+        <div class="layer-name">硬编码规则</div>
+        <div class="layer-items">Tooling · Safety · Execution Bias · Cron 约束 · Skills · Memory · Self-Update · Sandbox</div>
+      </div>
+    </div>
+    <div class="layer l2">
+      <div class="layer-pct">~40%</div>
+      <div class="layer-content">
+        <div class="layer-name">工作区上下文</div>
+        <div class="layer-items">AGENTS.md · SOUL.md · TOOLS.md · IDENTITY.md · USER.md · MEMORY.md</div>
+      </div>
+    </div>
+    <div class="layer l3">
+      <div class="layer-pct">~25%</div>
+      <div class="layer-content">
+        <div class="layer-name">动态环境</div>
+        <div class="layer-items">Workspace path · Runtime info · Model aliases · Channel capabilities · Thinking mode</div>
+      </div>
+    </div>
+  </div>
+  <div class="assembly-card">
+    <div class="card-title">ASSEMBLY PROCESS</div>
+    <div class="fn-name">buildAgentSystemPrompt()</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">收集 workspace md 文件并做截断/过滤</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">注入框架级硬编码 section</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">拼接 Skills XML 与 Memory prompt</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">追加 Runtime line 和动态环境</div>
+    </div>
+  </div>
+  <div class="bottom-note">提示词工程的本质不是写更好的 prompt，而是<strong>建立一个稳定、可重复、可扩展的拼装管道</strong>。</div>
+</div>
+</body>
+</html>

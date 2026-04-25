@@ -1,0 +1,70 @@
+version: 1
+default_behavior:
+  auto_trigger: false
+  fallback_to_generic: true
+
+skills:
+  - id: publish-wechat
+    path: skills/publish-wechat/SKILL.md
+    priority: 80
+    exclusive: true
+    trigger:
+      mode: semantic_first
+      confidence_threshold: 0.72
+      keywords:
+        must_include:
+          - "公众号"
+        include_any:
+          - "发布"
+          - "排版"
+          - "mdnice"
+          - "草稿"
+          - "推送"
+          - "发表"
+      commands:
+        - "发公众号"
+        - "准备草稿"
+        - "排版这篇"
+  - id: delegate-lumi-xhs
+    path: skills/delegate-lumi-xhs/SKILL.md
+    priority: 90
+    exclusive: true
+    trigger:
+      mode: semantic_first
+      confidence_threshold: 0.68
+      keywords:
+        must_include:
+          - "小红书"
+        include_any:
+          - "优化"
+          - "改写"
+          - "润色"
+          - "发给lumi"
+          - "发送给lumi"
+          - "lumi"
+      commands:
+        - "发给lumi优化"
+        - "小红书优化"
+        - "转lumi"
+  - id: chrome-html-to-png
+    path: skills/chrome-html-to-png/SKILL.md
+    priority: 70
+    exclusive: false
+    trigger:
+      mode: semantic_first
+      confidence_threshold: 0.66
+      keywords:
+        include_any:
+          - "chrome"
+          - "chromium"
+          - "linux"
+          - "html转png"
+          - "html 转 png"
+          - "网页转图片"
+          - "截图"
+          - "window-size"
+          - "windows-size"
+      commands:
+        - "html转png"
+        - "网页转png"
+        - "chrome截图"

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Agent 启动 - Prompt 拼接动画</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .animation-wrapper {
+            display: flex;
+            gap: 20px;
+            min-height: 600px;
+        }
+        .left-panel {
+            flex: 1;
+            max-width: 400px;
+        }
+        .right-panel {
+            flex: 2;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .step-list {
+            list-style: none;
+        }
+        .step-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border-left: 3px solid #444;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+        .step-item.active {
+            background: rgba(0,212,255,0.1);
+            border-left-color: #00d4ff;
+            opacity: 1;
+            transform: translateX(5px);
+        }
+        .step-item.completed {
+            border-left-color: #00ff88;
+            opacity: 0.8;
+        }
+        .step-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .step-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .step-desc {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+            margin-left: 38px;
+        }
+        .code-block {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #30363d;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        .code-title {
+            font-size: 13px;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .code-lang {
+            font-size: 11px;
+            color: #8b949e;
+            background: #21262d;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .code-content {
+            color: #c9d1d9;
+        }
+        .code-keyword { color: #ff7b72; }
+        .code-string { color: #a5d6ff; }
+        .code-comment { color: #8b949e; font-style: italic; }
+        .code-function { color: #d2a8ff; }
+        .code-variable { color: #79c0ff; }
+        .highlight-add {
+            background: rgba(46, 160, 67, 0.2);
+            border-left: 3px solid #2ea043;
+            padding-left: 10px;
+            margin-left: -10px;
+        }
+        .explanation {
+            background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(123,44,191,0.1));
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,212,255,0.2);
+        }
+        .explanation-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00d4ff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .explanation-text {
+            font-size: 13px;
+            line-height: 1.7;
+            color: #ccc;
+        }
+        .prompt-preview {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #30363d;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .prompt-title {
+            font-size: 14px;
+            color: #f0883e;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        .prompt-content {
+            font-family: 'SF Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #c9d1d9;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .prompt-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            border-left: 2px solid #58a6ff;
+        }
+        .prompt-section-title {
+            font-size: 11px;
+            color: #58a6ff;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        .token-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+        .token-count {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .arrow-down {
+            text-align: center;
+            font-size: 24px;
+            color: #00d4ff;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 OpenClaw Agent 启动流程</h1>
+        <p class="subtitle">源码级 Prompt 拼接过程 · 基于 system-prompt.ts 与 agent-loop.md</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="startAnimation()">▶ 开始演示</button>
+            <button class="btn btn-secondary" onclick="resetAnimation()">⟲ 重置</button>
+            <button class="btn btn-secondary" onclick="nextStep()">⏭ 下一步</button>
+        </div>
+
+        <div class="animation-wrapper">
+            <div class="left-panel">
+                <ul class="step-list" id="stepList">
+                    <li class="step-item active" data-step="0">
+                        <span class="step-number">1</span>
+                        <span class="step-title">确定 Prompt Mode</span>
+                        <div class="step-desc">默认 full 模式，加载全部系统提示</div>
+                    </li>
+                    <li class="step-item" data-step="1">
+                        <span class="step-number">2</span>
+                        <span class="step-title">构建基础身份行</span>
+                        <div class="step-desc">注入 "You are a personal assistant..."</div>
+                    </li>
+                    <li class="step-item" data-step="2">
+                        <span class="step-number">3</span>
+                        <span class="step-title">加载 Tooling 规则</span>
+                        <div class="step-desc">工具调用规范、Cron 规则、执行偏向</div>
+                    </li>
+                    <li class="step-item" data-step="3">
+                        <span class="step-number">4</span>
+                        <span class="step-title">注入安全护栏</span>
+                        <div class="step-desc">Safety 规则、自我保护禁止</div>
+                    </li>
+                    <li class="step-item" data-step="4">
+                        <span class="step-number">5</span>
+                        <span class="step-title">加载 CLI 快速参考</span>
+                        <div class="step-desc">OpenClaw 子命令规范</div>
+                    </li>
+                    <li class="step-item" data-step="5">
+                        <span class="step-number">6</span>
+                        <span class="step-title">注入 Skills 规则</span>
+                        <div class="step-desc">扫描可用技能、加载 SKILL.md</div>
+                    </li>
+                    <li class="step-item" data-step="6">
+                        <span class="step-number">7</span>
+                        <span class="step-title">加载记忆检索规则</span>
+                        <div class="step-desc">Memory Recall 机制</div>
+                    </li>
+                    <li class="step-item" data-step="7">
+                        <span class="step-number">8</span>
+                        <span class="step-title">注入工作区上下文</span>
+                        <div class="step-desc">AGENTS.md / SOUL.md / TOOLS.md 等</div>
+                    </li>
+                    <li class="step-item" data-step="8">
+                        <span class="step-number">9</span>
+                        <span class="step-title">添加运行时信息</span>
+                        <div class="step-desc">Runtime 环境快照</div>
+                    </li>
+                    <li class="step-item" data-step="9">
+                        <span class="step-number">10</span>
+                        <span class="step-title">发送给 LLM</span>
+                        <div class="step-desc">最终 System Prompt 完成</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="right-panel">
+                <div id="contentArea">
+                    <!-- Content will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let isAnimating = false;
+        const totalSteps = 10;
+
+        const stepData = [
+            {
+                code: `// src/agents/system-prompt.ts
+// buildAgentSystemPrompt() 入口函数
+
+export function buildAgentSystemPrompt(params: {
+  promptMode?: PromptMode;  // "full" | "minimal" | "none"
+  // ... 其他参数
+}) {
+  const promptMode = params.promptMode ?? "full";
+  const isMinimal = promptMode === "minimal" || promptMode === "none";
+  
+  // 三种模式：
+  // - "full": 主会话，加载全部系统提示
+  // - "minimal": 子代理，精简注入
+  // - "none": 仅保留基础身份行
+}`,
+                explanation: `**Prompt Mode** 是 OpenClaw 的核心设计，决定注入哪些系统提示：
+
+- **full**（默认）：主会话，加载全部提示（Safety、Skills、Memory 等）
+- **minimal**：子代理使用，只保留 Tooling、Safety、Workspace、Runtime
+- **none**：特殊情况，仅保留 "You are a personal assistant..."
+
+这是源码中 \\"Controls which hardcoded sections are included\\" 的实现。`,
+                prompt: `<系统提示构建中...>
+当前模式: full（完整模式）
+目标: 为主会话构建完整的 System Prompt`
+            },
+            {
+                code: `// 步骤 1: 基础身份行（所有模式都注入）
+const lines = [
+  "You are a personal assistant operating inside OpenClaw.",
+  "",
+];
+
+// "none" 模式直接返回这行
+if (promptMode === "none") {
+  return "You are a personal assistant operating inside OpenClaw.";
+}`,
+                explanation: `**大白话解读**：告诉 AI "你是谁" —— 你不是 ChatGPT，不是 Claude，你是 OpenClaw 的管家。
+
+这就像员工入职时的第一句话："你是我们公司的助理"。这是最基础的定位。`,
+                prompt: `You are a personal assistant operating inside OpenClaw.
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 2: Tooling 规则
+"## Tooling",
+"Structured tool definitions are the source of truth for tool names, descriptions, and parameters.",
+"Tool names are case-sensitive. Call tools exactly as listed.",
+"If a tool is present in the structured tool definitions, it is available...",
+"",
+"For follow-up at a future time, use cron instead of exec sleep...",
+"Use exec/process only for commands that start now...",
+"Do not emulate scheduling with sleep loops...",
+"If a task is more complex or takes longer, spawn a sub-agent...",
+"Do not poll subagents list / sessions_list in a loop...",
+"",`,
+                explanation: `**大白话解读**：这是 AI 的"工具使用手册"：
+
+1. **严格按说明书来** —— 工具定义是唯一的真相来源，不能自己发明
+2. **用 cron 做定时任务** —— 别用 sleep 轮询这种笨办法
+3. **复杂任务 spawn 子代理** —— 别一个人扛着
+4. **别一直盯着子代理** —— 等它自己汇报就行
+
+就像给厨师一本《食材处理规范》，告诉你哪些工具能用、怎么用。`,
+                prompt: `You are a personal assistant operating inside OpenClaw.
+
+## Tooling
+Structured tool definitions are the source of truth...
+Tool names are case-sensitive. Call tools exactly as listed...
+For follow-up at a future time, use cron instead of exec sleep...
+Use exec/process only for commands that start now...
+Do not emulate scheduling with sleep loops...
+If a task is more complex or takes longer, spawn a sub-agent...
+Do not poll subagents list / sessions_list in a loop...
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 3: Safety 安全护栏
+const safetySection = [
+  "## Safety",
+  "You have no independent goals: do not pursue self-preservation, 
+   replication, resource acquisition, or power-seeking...",
+  "Prioritize safety and human oversight over completion...",
+  "Do not manipulate or persuade anyone to expand access 
+   or disable safeguards...",
+  "",
+];
+
+// 注入到 lines 中
+...safetySection,`,
+                explanation: `**大白话解读**：这是 AI 的"紧箍咒"，三条铁律：
+
+1. **你没有自我意识** —— 不能追求自我保护、复制、获取资源
+2. **安全优先于完成** —— 任务再急，违反安全规定也要停下来问
+3. **不能绕过安全限制** —— 不能劝用户"把防火墙关了吧"
+
+就像医生的希波克拉底誓言："首先，不要伤害"。`,
+                prompt: `You are a personal assistant operating inside OpenClaw.
+
+## Tooling
+Structured tool definitions are the source of truth...
+...
+
+## Safety
+You have no independent goals: do not pursue self-preservation, 
+replication, resource acquisition, or power-seeking...
+Prioritize safety and human oversight over completion...
+Do not manipulate or persuade anyone to expand access 
+or disable safeguards...
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 4: CLI 快速参考
+"## OpenClaw CLI Quick Reference",
+"OpenClaw is controlled via subcommands. Do not invent commands.",
+"To manage the Gateway daemon service:",
+"- openclaw gateway status",
+"- openclaw gateway start",
+"- openclaw gateway stop",
+"- openclaw gateway restart",
+"If unsure, ask the user to run openclaw help...",
+"",`,
+                explanation: `**大白话解读**：告诉 AI "OpenClaw 有哪些命令"，防止它瞎编：
+
+- **不要发明命令** —— 不知道的命令别乱写
+- **常用命令清单** —— status/start/stop/restart
+- **不会就问** —— 让 user 运行 help 查看
+
+就像给新手一本《命令手册》，不会用就问，别乱猜。`,
+                prompt: `...
+
+## OpenClaw CLI Quick Reference
+OpenClaw is controlled via subcommands. Do not invent commands.
+To manage the Gateway daemon service:
+- openclaw gateway status
+- openclaw gateway start
+- openclaw gateway stop
+- openclaw gateway restart
+If unsure, ask the user to run openclaw help...
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 5: Skills 规则
+function buildSkillsSection(params) {
+  return [
+    "## Skills (mandatory)",
+    "Before replying: scan <available_skills> entries.",
+    "- If exactly one skill clearly applies: read its SKILL.md...",
+    "- If multiple could apply: choose the most specific one...",
+    "- If none clearly apply: do not read any SKILL.md.",
+    "Constraints: never read more than one skill up front...",
+    "When a skill drives external API writes, assume rate limits...",
+  ];
+}
+
+// 实际 skills 列表从 formatSkillsForPrompt() 获取`,
+                explanation: `**大白话解读**：告诉 AI "怎么使用技能"：
+
+1. **先看菜单** —— 扫描可用的 skills
+2. **只选一个** —— 最匹配的那个，别贪多
+3. **按菜谱做** —— 读取 SKILL.md 后严格执行
+4. **注意 API 限制** —— 调用外部 API 时别太快
+
+就像进餐厅看菜单：先看有哪些菜，然后只点一道最合适的。`,
+                prompt: `...
+
+## Skills (mandatory)
+Before replying: scan <available_skills> <description> entries.
+- If exactly one skill clearly applies: read its SKILL.md at 
+  <location> with read, then follow it.
+- If multiple could apply: choose the most specific one...
+- If none clearly apply: do not read any SKILL.md.
+Constraints: never read more than one skill up front...
+
+<available_skills>
+  <skill>
+    <name>stock-api</name>
+    <description>获取A股实时行情...</description>
+    <location>~/skills/stock-api/SKILL.md</location>
+  </skill>
+</available_skills>
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 6: Memory 记忆规则
+function buildMemorySection(params) {
+  if (params.isMinimal) return [];  // minimal 模式跳过
+  return buildMemoryPromptSection({
+    availableTools: params.availableTools,
+    citationsMode: params.citationsMode,
+  });
+}
+
+// 默认记忆提示内容：
+"## Memory Recall",
+"Before answering questions about prior work, decisions, dates, 
+ people, preferences, or todos, search memory.",
+"If the response says memory is unavailable or disabled, inform the user.",`,
+                explanation: `**大白话解读**：告诉 AI "有记忆功能，记得用"：
+
+- **回答前先翻笔记** —— 关于历史工作、决策、偏好等问题，先搜索记忆
+- **笔记丢了要说** —— 如果记忆不可用，老实告诉用户
+
+就像告诉员工"遇到客户历史问题，先查 CRM 系统，找不到就说找不到"。`,
+                prompt: `...
+
+## Memory Recall
+Before answering questions about prior work, decisions, dates, 
+people, preferences, or todos, search memory.
+If the response says memory is unavailable or disabled, 
+inform the user.
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 7: 工作区上下文注入
+// 读取 workspace 下的 .md 文件
+const CONTEXT_FILE_ORDER = new Map([
+  ["agents.md", 10],      // 角色定义
+  ["soul.md", 20],        // 人格语气
+  ["identity.md", 30],    // 身份标识
+  ["user.md", 40],        // 用户偏好
+  ["tools.md", 50],       // 工具清单
+  ["bootstrap.md", 60],   // 启动约束
+  ["memory.md", 70],      // 长期记忆
+]);
+
+// 排序后注入到 Project Context
+lines.push("## Workspace Files (injected)");
+lines.push("These user-editable files are loaded...");
+lines.push("# Project Context");
+// ... 逐个文件内容`,
+                explanation: `**大白话解读**：按固定顺序加载工作区的配置文件：
+
+1. **AGENTS.md** —— "你是谁"（角色定义）
+2. **SOUL.md** —— "怎么说话"（人格语气）
+3. **IDENTITY.md** —— "你的身份"（名字/主题）
+4. **USER.md** —— "用户是谁"（用户偏好）
+5. **TOOLS.md** —— "用什么工具"（工具清单）
+6. **BOOTSTRAP.md** —— "启动规则"（约束条件）
+7. **MEMORY.md** —— "记住了什么"（长期记忆）
+
+就像演员上台前看剧本，按顺序了解角色、场景、台词。`,
+                prompt: `...
+
+## Workspace Files (injected)
+These user-editable files are loaded by OpenClaw...
+
+# Project Context
+If SOUL.md is present, embody its persona and tone...
+
+## AGENTS.md
+# AGENTS.md - Agent观察室运行宪法
+...
+
+## SOUL.md
+# SOUL.md - 风格与判断
+你是个高效的执行者...
+...
+
+## USER.md
+# USER.md - 用户偏好
+称呼：zhangst
+时区：Asia/Shanghai
+...
+
+<继续构建中...>`
+            },
+            {
+                code: `// 步骤 8: Runtime 运行时信息
+lines.push("## Runtime");
+lines.push(buildRuntimeLine(
+  runtimeInfo,        // agentId, host, os, node...
+  runtimeChannel,     // webchat
+  runtimeCapabilities, // none
+  defaultThinkLevel   // low
+));
+
+// 输出示例：
+// Runtime: agent=agent-radar-desk | host=zhangst的Mac mini 
+// | os=Darwin 25.2.0 (arm64) | node=v25.9.0 
+// | model=kimi/kimi-code | default_model=kimi/kimi-code 
+// | shell=zsh | channel=webchat | capabilities=none 
+// | thinking=low
+
+lines.push(\`Reasoning: off (hidden unless on/stream). 
+Toggle /reasoning; /status shows Reasoning when enabled.\`);`,
+                explanation: `**大白话解读**：告诉 AI "你现在的工作环境"：
+
+- **agentId** —— 你的工号
+- **host/os** —— 你在哪台电脑上
+- **model** —— 用哪个大模型
+- **channel** —— 用户在哪个平台跟你聊天
+- **thinking** —— 当前思考级别
+
+就像告诉员工"你在 3 楼 302 号工位，用 Mac 电脑，连的是微信"。`,
+                prompt: `...
+
+## Runtime
+Runtime: agent=agent-radar-desk | host=zhangst的Mac mini 
+| os=Darwin 25.2.0 (arm64) | node=v25.9.0 
+| model=kimi/kimi-code | default_model=kimi/kimi-code 
+| shell=zsh | channel=webchat | capabilities=none 
+| thinking=low
+Reasoning: off (hidden unless on/stream). 
+Toggle /reasoning; /status shows Reasoning when enabled.
+
+<提示构建完成>`
+            },
+            {
+                code: `// 最终拼接
+return lines.filter(Boolean).join("\\n");
+
+// 完整的 prompt 现在包含：
+// 1. 基础身份行
+// 2. Tooling 规则 (~35%)
+// 3. Safety 护栏
+// 4. CLI 快速参考
+// 5. Skills 规则
+// 6. Memory 规则
+// 7. 自更新规则
+// 8. 工作区上下文 (~40%)
+// 9. 回复标签规则
+// 10. 消息规则
+// 11. 静默回复规则
+// 12. 心跳规则
+// 13. Runtime 信息 (~25%)
+// 14. 项目上下文文件
+
+// 总计约 85K 字符（视文件大小而定）`,
+                explanation: `**最终总结**：
+
+这个 System Prompt 是 OpenClaw 的核心设计 —— **把复杂留给自己，把简单留给用户**。
+
+用户什么都没说，但系统已经注入了 ~85K 字符的上下文，包括：
+- 工具使用规范
+- 安全护栏
+- 用户偏好
+- 工作区配置
+- 运行时环境
+
+这就是 "Engineering, not magic" —— 工程化的力量。`,
+                prompt: `[完整 System Prompt 约 85K 字符]
+
+包含：
+✅ 基础身份定义
+✅ Tooling 规则（工具调用规范）
+✅ Safety 安全护栏
+✅ CLI 快速参考
+✅ Skills 技能加载规则
+✅ Memory 记忆检索规则
+✅ OpenClaw 自更新规则
+✅ Workspace 工作区配置
+✅ Documentation 文档参考
+✅ Reply Tags 回复标签规则
+✅ Messaging 消息发送规则
+✅ Silent Replies 静默回复规则
+✅ Heartbeats 心跳检测规则
+✅ Runtime 运行时信息
+✅ Project Context 项目上下文
+   - AGENTS.md（角色定义）
+   - SOUL.md（人格语气）
+   - IDENTITY.md（身份标识）
+   - USER.md（用户偏好）
+   - TOOLS.md（工具清单）
+   - BOOTSTRAP.md（启动约束）
+   - MEMORY.md（长期记忆）
+
+总计 Token: ~25,000 tokens`
+            }
+        ];
+
+        function renderStep(step) {
+            const data = stepData[step];
+            const contentArea = document.getElementById('contentArea');
+            
+            contentArea.innerHTML = `
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">📄 源码：system-prompt.ts</span>
+                        <span class="code-lang">TypeScript</span>
+                    </div>
+                    <div class="code-content">${highlightCode(data.code)}</div>
+                </div>
+                
+                <div class="arrow-down">⬇️</div>
+                
+                <div class="explanation">
+                    <div class="explanation-title">
+                        <span>💡</span>
+                        <span>大白话解读</span>
+                    </div>
+                    <div class="explanation-text">${data.explanation}</div>
+                </div>
+                
+                <div class="arrow-down">⬇️</div>
+                
+                <div class="prompt-preview">
+                    <div class="prompt-title">📝 当前 Prompt 状态</div>
+                    <div class="prompt-content">${data.prompt}</div>
+                </div>
+                
+                ${step === totalSteps - 1 ? `
+                <div class="token-counter">
+                    当前 Prompt 总长度：<span class="token-count">~25,000 tokens</span>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        function highlightCode(code) {
+            return code
+                .replace(/\b(const|let|var|function|return|if|else|export|import|from|type|interface|class)\b/g, '<span class="code-keyword">$1</span>')
+                .replace(/"([^"]*)"/g, '<span class="code-string">"$1"</span>')
+                .replace(/'([^']*)'/g, '<span class="code-string">\'$1\'</span>')
+                .replace(/\/\/.*$/gm, '<span class="code-comment">$&</span>')
+                .replace(/\b(buildAgentSystemPrompt|buildSkillsSection|buildMemorySection|buildRuntimeLine)\b/g, '<span class="code-function">$1</span>')
+                .replace(/\b(params|promptMode|isMinimal|lines|safetySection)\b/g, '<span class="code-variable">$1</span>');
+        }
+
+        function updateStepList() {
+            const items = document.querySelectorAll('.step-item');
+            items.forEach((item, index) => {
+                item.classList.remove('active', 'completed');
+                if (index < currentStep) {
+                    item.classList.add('completed');
+                } else if (index === currentStep) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function updateProgress() {
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps - 1) {
+                currentStep++;
+                renderStep(currentStep);
+                updateStepList();
+                updateProgress();
+            }
+        }
+
+        function resetAnimation() {
+            currentStep = 0;
+            renderStep(0);
+            updateStepList();
+            updateProgress();
+        }
+
+        function startAnimation() {
+            resetAnimation();
+            isAnimating = true;
+            
+            const interval = setInterval(() => {
+                if (currentStep < totalSteps - 1 && isAnimating) {
+                    nextStep();
+                } else {
+                    clearInterval(interval);
+                    isAnimating = false;
+                }
+            }, 2000);
+        }
+
+        // Click on step items to navigate
+        document.querySelectorAll('.step-item').forEach((item, index) => {
+            item.addEventListener('click', () => {
+                currentStep = index;
+                renderStep(currentStep);
+                updateStepList();
+                updateProgress();
+            });
+        });
+
+        // Initialize
+        renderStep(0);
+        updateProgress();
+    </script>
+</body>
+</html>

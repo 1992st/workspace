@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; background: #f5f5f5; }
+.chart { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+<canvas id="chart1" width="800" height="500" class="chart"></canvas>
+<canvas id="chart2" width="800" height="500" class="chart"></canvas>
+<script>
+// 配色
+const colors = {
+    enterprise: { bg: '#FFE4EC', border: '#E91E63' },
+    code: { bg: '#FFF8E1', border: '#FFB300' },
+    ai: { bg: '#E3F2FD', border: '#1976D2' },
+    insight: { bg: '#F5F5F5', border: '#424242' },
+    text: '#212121'
+};
+
+// 第一张：三线部署架构图
+const c1 = document.getElementById('chart1');
+const ctx1 = c1.getContext('2d');
+
+// 背景
+ctx1.fillStyle = '#FAFAFA';
+ctx1.fillRect(0, 0, 800, 500);
+
+// 标题
+ctx1.fillStyle = colors.text;
+ctx1.font = 'bold 24px "PingFang SC", "Helvetica", sans-serif';
+ctx1.textAlign = 'center';
+ctx1.fillText('Anthropic 三线部署架构', 400, 45);
+
+// 绘制圆角矩形函数
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+// 三层结构
+const layerW = 280, layerH = 100, spacing = 25;
+const centerX = 300;
+const startY = 80;
+
+// 第三线 - Enterprise
+const y3 = startY;
+const x3 = centerX - layerW / 2;
+roundRect(ctx1, x3, y3, layerW, layerH, 12, colors.enterprise.bg, colors.enterprise.border);
+ctx1.fillStyle = colors.enterprise.border;
+ctx1.font = 'bold 18px "PingFang SC", sans-serif';
+ctx1.fillText('第三线 Enterprise', centerX, y3 + 35);
+ctx1.fillStyle = colors.text;
+ctx1.font = '14px "PingFang SC", sans-serif';
+ctx1.fillText('主战场 · 法律/医疗/金融', centerX, y3 + 65);
+
+// 第二线 - Claude Code
+const y2 = y3 + layerH + spacing;
+const x2 = centerX - layerW / 2;
+roundRect(ctx1, x2, y2, layerW, layerH, 12, colors.code.bg, colors.code.border);
+ctx1.fillStyle = colors.code.border;
+ctx1.font = 'bold 18px "PingFang SC", sans-serif';
+ctx1.fillText('第二线 Claude Code', centerX, y2 + 35);
+ctx1.fillStyle = colors.text;
+ctx1.font = '14px "PingFang SC", sans-serif';
+ctx1.fillText('场景支点 · ARR $14-19亿 (13-18%)', centerX, y2 + 65);
+
+// 第一线 - Claude.ai
+const y1 = y2 + layerH + spacing;
+const x1 = centerX - layerW / 2;
+roundRect(ctx1, x1, y1, layerW, layerH, 12, colors.ai.bg, colors.ai.border);
+ctx1.fillStyle = colors.ai.border;
+ctx1.font = 'bold 18px "PingFang SC", sans-serif';
+ctx1.fillText('第一线 Claude.ai', centerX, y1 + 35);
+ctx1.fillStyle = colors.text;
+ctx1.font = '14px "PingFang SC", sans-serif';
+ctx1.fillText('认知基建', centerX, y1 + 70);
+
+// 箭头
+function drawArrow(ctx, x, y1, y2) {
+    ctx.strokeStyle = '#757575';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y2);
+    ctx.lineTo(x - 6, y2 - 10);
+    ctx.lineTo(x + 6, y2 - 10);
+    ctx.closePath();
+    ctx.fillStyle = '#757575';
+    ctx.fill();
+}
+
+const arrowX = x1 - 30;
+drawArrow(ctx1, arrowX, y1 + layerH / 2, y2 + layerH / 2);
+drawArrow(ctx1, arrowX, y2 + layerH / 2, y3 + layerH / 2);
+
+// 右侧洞察框
+const ix = centerX + layerW / 2 + 30;
+const iy = y2 - 10;
+const iw = 200, ih = 130;
+roundRect(ctx1, ix, iy, iw, ih, 8, colors.insight.bg, colors.insight.border);
+ctx1.fillStyle = colors.insight.border;
+ctx1.font = 'bold 18px "PingFang SC", sans-serif';
+ctx1.fillText('核心洞察', ix + iw / 2, iy + 30);
+ctx1.fillStyle = colors.text;
+ctx1.font = '14px "PingFang SC", sans-serif';
+ctx1.fillText('三线是递进关系', ix + iw / 2, iy + 55);
+ctx1.fillText('不是替代关系', ix + iw / 2, iy + 75);
+ctx1.fillText('Code = 战术验证场', ix + iw / 2, iy + 105);
+ctx1.fillStyle = '#E91E63';
+ctx1.font = 'bold 14px "PingFang SC", sans-serif';
+ctx1.fillText('Enterprise = 变现终点', ix + iw / 2, iy + 120);
+
+// 第二张：收入结构对比图
+const c2 = document.getElementById('chart2');
+const ctx2 = c2.getContext('2d');
+
+// 背景
+ctx2.fillStyle = '#FAFAFA';
+ctx2.fillRect(0, 0, 800, 500);
+
+// 标题
+ctx2.fillStyle = colors.text;
+ctx2.font = 'bold 22px "PingFang SC", sans-serif';
+ctx2.textAlign = 'center';
+ctx2.fillText('Claude Code 为什么只占收入的 13-18%？', 400, 45);
+ctx2.fillStyle = '#757575';
+ctx2.font = '14px "PingFang SC", sans-serif';
+ctx2.fillText('因为定位是"验证战术的试验场"，不是变现终点', 400, 70);
+
+// 饼图
+const cx = 250, cy = 280, r = 130;
+const codePercent = 0.155;
+
+// 其他业务
+ctx2.beginPath();
+ctx2.moveTo(cx, cy);
+ctx2.arc(cx, cy, r, -Math.PI / 2 + codePercent * Math.PI * 2, -Math.PI / 2 + Math.PI * 2);
+ctx2.closePath();
+ctx2.fillStyle = '#E0E0E0';
+ctx2.fill();
+ctx2.strokeStyle = '#9E9E9E';
+ctx2.lineWidth = 2;
+ctx2.stroke();
+
+// Claude Code
+ctx2.beginPath();
+ctx2.moveTo(cx, cy);
+ctx2.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + codePercent * Math.PI * 2);
+ctx2.closePath();
+ctx2.fillStyle = colors.code.bg;
+ctx2.fill();
+ctx2.strokeStyle = colors.code.border;
+ctx2.lineWidth = 3;
+ctx2.stroke();
+
+// 图例
+const lx = 480, ly = 180;
+ctx2.fillStyle = colors.code.bg;
+ctx2.fillRect(lx, ly, 30, 30);
+ctx2.strokeStyle = colors.code.border;
+ctx2.lineWidth = 2;
+ctx2.strokeRect(lx, ly, 30, 30);
+ctx2.fillStyle = colors.text;
+ctx2.font = '16px "PingFang SC", sans-serif';
+ctx2.textAlign = 'left';
+ctx2.fillText('Claude Code', lx + 45, ly + 20);
+ctx2.fillStyle = '#757575';
+ctx2.font = '12px "PingFang SC", sans-serif';
+ctx2.fillText('ARR $14-19亿', lx + 45, ly + 40);
+ctx2.fillStyle = colors.code.border;
+ctx2.font = 'bold 24px "PingFang SC", sans-serif';
+ctx2.fillText('13-18%', lx + 180, ly + 25);
+
+// 其他业务图例
+const ly2 = ly + 70;
+ctx2.fillStyle = '#E0E0E0';
+ctx2.fillRect(lx, ly2, 30, 30);
+ctx2.strokeStyle = '#9E9E9E';
+ctx2.lineWidth = 2;
+ctx2.strokeRect(lx, ly2, 30, 30);
+ctx2.fillStyle = colors.text;
+ctx2.font = '16px "PingFang SC", sans-serif';
+ctx2.fillText('其他业务', lx + 45, ly2 + 20);
+ctx2.fillStyle = '#757575';
+ctx2.font = '12px "PingFang SC", sans-serif';
+ctx2.fillText('Enterprise + Claude.ai', lx + 45, ly2 + 40);
+ctx2.fillStyle = '#616161';
+ctx2.font = 'bold 24px "PingFang SC", sans-serif';
+ctx2.fillText('82-87%', lx + 180, ly2 + 25);
+
+// 底部说明
+roundRect(ctx2, 80, 420, 640, 60, 6, '#FFF3E0', '#FF9800');
+ctx2.fillStyle = '#E65100';
+ctx2.font = '16px "PingFang SC", sans-serif';
+ctx2.textAlign = 'center';
+ctx2.fillText('📊 Claude Code 是战术试验场 → 验证成功 → 向 Enterprise 输出', 400, 458);
+
+// 保存canvas为图片
+function saveCanvas(id, filename) {
+    const canvas = document.getElementById(id);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// 延迟保存
+setTimeout(() => {
+    saveCanvas('chart1', 'claude_architecture.png');
+    saveCanvas('chart2', 'claude_revenue.png');
+}, 1000);
+</script>
+</body>
+</html>

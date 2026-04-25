@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>05 Inject & Assemble</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 60px; font-size: 56px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 135px; font-size: 26px; color: #a1a1a6; font-weight: 400; }
+
+.step-bar { position: absolute; left: 80px; top: 210px; display: flex; gap: 16px; }
+.step-dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.4s; }
+.step-dot.active { background: #2997ff; }
+
+/* Main canvas */
+.canvas { position: absolute; left: 80px; top: 260px; width: 1760px; height: 720px; }
+
+/* User query bubble */
+.user-bubble { position: absolute; left: 0; top: 40px; background: rgba(41,151,255,0.12); border: 1px solid rgba(41,151,255,0.35); border-radius: 24px; padding: 28px 36px; font-size: 28px; color: #fff; opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.22,1,0.36,1); }
+.user-bubble.show { opacity: 1; transform: translateY(0); }
+.user-label { position: absolute; left: 0; top: 0; font-size: 14px; color: #2997ff; letter-spacing: 1px; opacity: 0; transition: opacity 0.4s; }
+.user-label.show { opacity: 1; }
+
+/* Gateway and Session */
+.gateway-box { position: absolute; left: 360px; top: 20px; width: 220px; height: 120px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: scale(0.95); transition: all 0.5s; }
+.gateway-box.show { opacity: 1; transform: scale(1); }
+.gateway-title { font-size: 18px; font-weight: 600; }
+.gateway-sub { font-size: 13px; color: #86868b; margin-top: 4px; }
+
+/* Code snippet for hasCompletedBootstrapTurn */
+.code-snippet { position: absolute; left: 360px; top: 160px; width: 420px; background: rgba(20,20,25,0.9); border: 1px solid rgba(50,50,60,0.8); border-radius: 14px; padding: 18px 22px; font-family: "SF Mono", Menlo, monospace; font-size: 13px; color: #c1c1c6; line-height: 1.6; opacity: 0; transition: opacity 0.5s; }
+.code-snippet.show { opacity: 1; }
+.code-snippet .kw { color: #ff7aa2; }
+.code-snippet .fn { color: #7ee787; }
+.code-snippet .str { color: #e5c07b; }
+
+/* Arrow from user to gateway */
+.arrow-ug { position: absolute; left: 170px; top: 72px; width: 0; height: 2px; background: rgba(255,255,255,0.2); opacity: 0; transition: all 0.5s; }
+.arrow-ug.show { width: 170px; opacity: 1; }
+.arrow-ug::after { content: "▸"; position: absolute; right: -8px; top: -7px; color: rgba(255,255,255,0.35); font-size: 14px; }
+
+/* Workspace files injection */
+.files-group { position: absolute; left: 620px; top: 20px; width: 340px; height: 260px; opacity: 0; transform: translateX(30px); transition: all 0.6s; }
+.files-group.show { opacity: 1; transform: translateX(0); }
+.files-label { font-size: 14px; color: #a1a1a6; letter-spacing: 1px; margin-bottom: 16px; }
+.file-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; opacity: 0; transform: translateX(20px); transition: all 0.4s; }
+.file-item.show { opacity: 1; transform: translateX(0); }
+.file-icon { width: 8px; height: 8px; background: #ff9f0a; border-radius: 2px; }
+.file-name { font-size: 17px; color: #f5f5f7; font-family: "SF Mono", Menlo, monospace; }
+.file-size { font-size: 13px; color: #6e6e73; margin-left: auto; }
+
+/* Arrow from gateway to files */
+.arrow-gf { position: absolute; left: 580px; top: 72px; width: 0; height: 2px; background: rgba(255,255,255,0.2); opacity: 0; transition: all 0.4s; }
+.arrow-gf.show { width: 30px; opacity: 1; }
+.arrow-gf::after { content: "▸"; position: absolute; right: -8px; top: -7px; color: rgba(255,255,255,0.35); font-size: 14px; }
+
+/* Assembly layers */
+.assembly { position: absolute; left: 1020px; top: 20px; width: 460px; height: 380px; opacity: 0; transform: translateX(40px); transition: all 0.7s; }
+.assembly.show { opacity: 1; transform: translateX(0); }
+.assembly-label { font-size: 14px; color: #a1a1a6; letter-spacing: 1px; margin-bottom: 18px; }
+.layer { position: relative; width: 100%; border-radius: 16px; padding: 18px 22px; margin-bottom: 12px; opacity: 0; transform: translateY(16px); transition: all 0.5s; }
+.layer.show { opacity: 1; transform: translateY(0); }
+.layer-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.layer-desc { font-size: 14px; opacity: 0.85; line-height: 1.45; }
+.layer-1 { background: rgba(48,99,209,0.18); border: 1px solid rgba(48,99,209,0.4); }
+.layer-2 { background: rgba(194,65,12,0.18); border: 1px solid rgba(194,65,12,0.4); }
+.layer-3 { background: rgba(126,34,206,0.18); border: 1px solid rgba(126,34,206,0.4); }
+
+/* Prompt stats box */
+.prompt-stats { position: absolute; left: 1020px; top: 430px; width: 460px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px 24px; opacity: 0; transition: opacity 0.5s; }
+.prompt-stats.show { opacity: 1; }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 16px; }
+.stat-val { font-family: "SF Mono", Menlo, monospace; color: #30d158; }
+
+/* Arrow from files to assembly */
+.arrow-fa { position: absolute; left: 960px; top: 140px; width: 0; height: 2px; background: rgba(255,255,255,0.2); opacity: 0; transition: all 0.5s; }
+.arrow-fa.show { width: 50px; opacity: 1; }
+.arrow-fa::after { content: "▸"; position: absolute; right: -8px; top: -7px; color: rgba(255,255,255,0.35); font-size: 14px; }
+
+/* Final LLM */
+.llm-box { position: absolute; left: 1540px; top: 140px; width: 260px; height: 180px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: scale(0.9); transition: all 0.6s; }
+.llm-box.show { opacity: 1; transform: scale(1); }
+.llm-title { font-size: 32px; font-weight: 600; }
+.llm-sub { font-size: 15px; color: #86868b; margin-top: 8px; text-align: center; }
+
+/* Arrow from assembly to llm */
+.arrow-al { position: absolute; left: 1480px; top: 220px; width: 0; height: 2px; background: rgba(255,255,255,0.2); opacity: 0; transition: all 0.5s; }
+.arrow-al.show { width: 50px; opacity: 1; }
+.arrow-al::after { content: "▸"; position: absolute; right: -8px; top: -7px; color: rgba(255,255,255,0.35); font-size: 14px; }
+
+/* Bottom legend */
+.legend { position: absolute; left: 80px; top: 940px; font-size: 18px; color: #6e6e73; }
+.legend strong { color: #d1d1d6; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">注入与拼装</div>
+  <div class="subtitle">以一句「你是谁？」为例，看 OpenClaw 注入了多少 Prompt</div>
+
+  <div class="step-bar">
+    <div class="step-dot" id="d1"></div>
+    <div class="step-dot" id="d2"></div>
+    <div class="step-dot" id="d3"></div>
+    <div class="step-dot" id="d4"></div>
+    <div class="step-dot" id="d5"></div>
+    <div class="step-dot" id="d6"></div>
+  </div>
+
+  <div class="canvas">
+    <!-- Step 1: User input -->
+    <div class="user-label" id="ul">User Query</div>
+    <div class="user-bubble" id="ub">你是谁？</div>
+
+    <!-- Step 2: Gateway/Session -->
+    <div class="arrow-ug" id="aug"></div>
+    <div class="gateway-box" id="gw">
+      <div class="gateway-title">Gateway / Session</div>
+      <div class="gateway-sub">check bootstrap status</div>
+    </div>
+    <div class="code-snippet" id="cs">
+      <span class="fn">hasCompletedBootstrapTurn</span>(sessionFile)<br>
+      { maxTailBytes: <span class="str">256000</span>, maxTailRecords: <span class="str">500</span> }
+    </div>
+
+    <!-- Step 3: Files injection -->
+    <div class="arrow-gf" id="agf"></div>
+    <div class="files-group" id="fg">
+      <div class="files-label">Workspace Context Files</div>
+      <div class="file-item" id="f1"><div class="file-icon"></div><div class="file-name">AGENTS.md</div><div class="file-size">~2.4k</div></div>
+      <div class="file-item" id="f2"><div class="file-icon"></div><div class="file-name">SOUL.md</div><div class="file-size">~1.1k</div></div>
+      <div class="file-item" id="f3"><div class="file-icon"></div><div class="file-name">TOOLS.md</div><div class="file-size">~3.8k</div></div>
+      <div class="file-item" id="f4"><div class="file-icon"></div><div class="file-name">IDENTITY.md</div><div class="file-size">~0.6k</div></div>
+      <div class="file-item" id="f5"><div class="file-icon"></div><div class="file-name">USER.md</div><div class="file-size">~0.4k</div></div>
+      <div class="file-item" id="f6"><div class="file-icon"></div><div class="file-name">MEMORY.md</div><div class="file-size">~5.2k</div></div>
+    </div>
+
+    <!-- Step 4: Assembly -->
+    <div class="arrow-fa" id="afa"></div>
+    <div class="assembly" id="asm">
+      <div class="assembly-label">buildAgentSystemPrompt()</div>
+      <div class="layer layer-1" id="l1">
+        <div class="layer-title">硬编码规则 · ~30%</div>
+        <div class="layer-desc">Tooling · Safety · Execution Bias · Skills · Memory · Cron</div>
+      </div>
+      <div class="layer layer-2" id="l2">
+        <div class="layer-title">项目上下文 · ~45%</div>
+        <div class="layer-desc">AGENTS / SOUL / TOOLS / IDENTITY / USER / MEMORY.md</div>
+      </div>
+      <div class="layer layer-3" id="l3">
+        <div class="layer-title">动态环境 · ~25%</div>
+        <div class="layer-desc">Runtime · Workspace path · Model alias · Sandbox info</div>
+      </div>
+    </div>
+
+    <!-- Step 5: Stats -->
+    <div class="prompt-stats" id="ps">
+      <div class="stat-row"><span>System Prompt 总字符数</span><span class="stat-val">~85,000 chars</span></div>
+      <div class="stat-row"><span>单用户 query 长度</span><span class="stat-val">4 chars</span></div>
+      <div class="stat-row"><span>上下文膨胀倍数</span><span class="stat-val">~21,250×</span></div>
+    </div>
+
+    <!-- Step 6: LLM -->
+    <div class="arrow-al" id="aal"></div>
+    <div class="llm-box" id="llm">
+      <div class="llm-title">LLM</div>
+      <div class="llm-sub">System Prompt + User Query<br>→ Generate response</div>
+    </div>
+  </div>
+
+  <div class="legend">核心洞察：你的 4 个字触发了 <strong>~85K 字符的系统上下文注入与拼装</strong>，这是 OpenClaw 把无状态 LLM 变成可控 Agent 的关键机制。</div>
+</div>
+
+<script>
+const qs = (sel) => document.querySelector(sel);
+const qsa = (sel) => document.querySelectorAll(sel);
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function run() {
+  // Reset
+  qsa('.show').forEach(el => el.classList.remove('show'));
+  qsa('.step-dot').forEach(el => el.classList.remove('active'));
+  await delay(400);
+
+  // Step 1
+  qs('#d1').classList.add('active');
+  qs('#ul').classList.add('show');
+  qs('#ub').classList.add('show');
+  await delay(900);
+
+  // Step 2
+  qs('#d2').classList.add('active');
+  qs('#aug').classList.add('show');
+  await delay(300);
+  qs('#gw').classList.add('show');
+  await delay(500);
+  qs('#cs').classList.add('show');
+  await delay(900);
+
+  // Step 3
+  qs('#d3').classList.add('active');
+  qs('#agf').classList.add('show');
+  await delay(300);
+  qs('#fg').classList.add('show');
+  for (let i = 1; i <= 6; i++) { qs('#f' + i).classList.add('show'); await delay(120); }
+  await delay(800);
+
+  // Step 4
+  qs('#d4').classList.add('active');
+  qs('#afa').classList.add('show');
+  await delay(300);
+  qs('#asm').classList.add('show');
+  for (let i = 1; i <= 3; i++) { qs('#l' + i).classList.add('show'); await delay(200); }
+  await delay(800);
+
+  // Step 5
+  qs('#d5').classList.add('active');
+  qs('#ps').classList.add('show');
+  await delay(900);
+
+  // Step 6
+  qs('#d6').classList.add('active');
+  qs('#aal').classList.add('show');
+  await delay(300);
+  qs('#llm').classList.add('show');
+
+  await delay(3000);
+  run();
+}
+
+run();
+</script>
+</body>
+</html>

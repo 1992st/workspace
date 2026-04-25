@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>09 P100 Case</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+.slide { width: 1920px; height: 1080px; position: relative; }
+.title { position: absolute; left: 80px; top: 60px; font-size: 52px; font-weight: 600; letter-spacing: -1px; }
+.subtitle { position: absolute; left: 80px; top: 130px; font-size: 24px; color: #a1a1a6; font-weight: 400; }
+
+/* Center user request */
+.request { position: absolute; left: 50%; top: 240px; transform: translateX(-50%); background: rgba(41,151,255,0.1); border: 1px solid rgba(41,151,255,0.3); border-radius: 24px; padding: 24px 40px; font-size: 26px; color: #fff; }
+.request-label { text-align: center; font-size: 14px; color: #2997ff; letter-spacing: 1px; margin-bottom: 8px; }
+
+/* Four subsystems */
+.subsystems { position: absolute; left: 80px; top: 380px; width: 1760px; display: flex; gap: 28px; }
+.sys { flex: 1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 28px; }
+.sys-num { font-size: 16px; color: #86868b; margin-bottom: 10px; font-family: "SF Mono", Menlo, monospace; }
+.sys-name { font-size: 24px; font-weight: 600; margin-bottom: 14px; }
+.sys-desc { font-size: 17px; color: #a1a1a6; line-height: 1.55; margin-bottom: 18px; }
+.sys-code { padding: 14px 18px; background: rgba(20,20,25,0.9); border: 1px solid rgba(50,50,60,0.8); border-radius: 12px; font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #c1c1c6; line-height: 1.5; }
+.sys-code .k { color: #ff9f0a; }
+
+/* Execution pipeline */
+.pipeline { position: absolute; left: 80px; top: 800px; width: 1760px; display: flex; align-items: center; justify-content: center; gap: 30px; }
+.pipe-step { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pipe-icon { width: 90px; height: 90px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.pipe-label { font-size: 16px; color: #d1d1d6; }
+.pipe-sub { font-size: 13px; color: #6e6e73; font-family: "SF Mono", Menlo, monospace; }
+.pipe-arrow { color: rgba(255,255,255,0.2); font-size: 24px; }
+
+/* Bottom note */
+.bottom-note { position: absolute; left: 80px; top: 960px; font-size: 20px; color: #6e6e73; }
+.bottom-note strong { color: #d1d1d6; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="title">P100-recordpen 编译 + 烧录 + 调试</div>
+  <div class="subtitle">一个真实请求如何同时激活四个子系统</div>
+
+  <div class="request">
+    <div class="request-label">User Request</div>
+    <div>帮我编译最新固件，烧录到设备上，然后调试验证运行结果。</div>
+  </div>
+
+  <div class="subsystems">
+    <div class="sys">
+      <div class="sys-num">01</div>
+      <div class="sys-name">Bootstrap</div>
+      <div class="sys-desc">加载 AGENTS.md、SOUL.md、TOOLS.md 等 5~6 个核心上下文文件，注入 System Prompt。</div>
+      <div class="sys-code">~85K chars<br>context injection</div>
+    </div>
+    <div class="sys">
+      <div class="sys-num">02</div>
+      <div class="sys-name">Skills</div>
+      <div class="sys-desc">语义匹配命中 device-build-debug，自动读取 SKILL.md，获得 SSH → make → rsync → adb 的执行规范。</div>
+      <div class="sys-code"><span class="k">device-build-debug</span><br>SKILL.md loaded</div>
+    </div>
+    <div class="sys">
+      <div class="sys-num">03</div>
+      <div class="sys-name">Memory</div>
+      <div class="sys-desc">检索 MEMORY.md 和 memory/*.md，找到之前的编译参数、设备 IP、失败记录，避免重复踩坑。</div>
+      <div class="sys-code">qmd search<br>IP + make params</div>
+    </div>
+    <div class="sys">
+      <div class="sys-num">04</div>
+      <div class="sys-name">System Prompt</div>
+      <div class="sys-desc">把 Sandbox 规则、Execution Bias、Runtime 信息拼入 Prompt，驱动 LLM 生成正确的 exec 调用。</div>
+      <div class="sys-code">safety + bias<br>+ runtime line</div>
+    </div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">🖥</div>
+      <div class="pipe-label">SSH Compile</div>
+      <div class="pipe-sub">make -j8</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">⚡</div>
+      <div class="pipe-label">rsync Flash</div>
+      <div class="pipe-sub">push firmware</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🔍</div>
+      <div class="pipe-label">adb Debug</div>
+      <div class="pipe-sub">logcat verify</div>
+    </div>
+  </div>
+
+  <div class="bottom-note">这个案例说明：OpenClaw 不是简单地把 LLM 包装一层，而是<strong>用四个子系统把无状态模型变成了能跨网络、跨设备完成工程任务的 Agent</strong>。</div>
+</div>
+</body>
+</html>

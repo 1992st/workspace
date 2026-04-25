@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>article.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="openclaw-%E7%9A%84-3-%E4%B8%AA%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6%E5%86%B3%E5%AE%9A%E4%BA%86%E4%BD%A0%E7%9A%84-ai-%E5%8A%A9%E6%89%8B%E6%9C%89%E5%A4%9A%E6%87%82%E4%BD%A0">OpenClaw 的 3 个核心文件，决定了你的 AI 助手有多懂你</h1>
+<blockquote>
+<p><strong>Agent 小茶馆 · 工具篇</strong></p>
+<p>为什么你的 AI 助手知道你喜欢先说结论？为什么它能记住上周聊过的项目？为什么它不会把你的隐私往外说？</p>
+<p>答案藏在 6 个配置文件里，其中 3 个是核心。</p>
+</blockquote>
+<hr>
+<h2 id="openclaw-%E6%98%AF%E4%BB%80%E4%B9%88">OpenClaw 是什么</h2>
+<p>一句话：<strong>OpenClaw 是一个本地运行的 AI Agent 网关</strong>，连接你的聊天平台（微信、Discord、Telegram 等），让大模型调用本地工具（文件、浏览器、代码）来完成任务。</p>
+<p>简单说，它是能直接操作你电脑的数字员工，不是简单的聊天机器人。</p>
+<hr>
+<h2 id="6-%E4%B8%AA%E6%96%87%E4%BB%B63-%E4%B8%AA%E6%A0%B8%E5%BF%83">6 个文件，3 个核心</h2>
+<p>OpenClaw 用 6 个配置文件管理 AI 助手的行为：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+<th>重要性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SOUL.md</strong></td>
+<td>性格和语气</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><strong>AGENTS.md</strong></td>
+<td>工作流程和规则</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><strong>MEMORY.md</strong></td>
+<td>长期记忆和经验</td>
+<td>核心</td>
+</tr>
+<tr>
+<td>USER.md</td>
+<td>用户偏好</td>
+<td>辅助</td>
+</tr>
+<tr>
+<td>TOOLS.md</td>
+<td>工具使用规范</td>
+<td>辅助</td>
+</tr>
+<tr>
+<td>BOOTSTRAP.md</td>
+<td>启动自检</td>
+<td>辅助</td>
+</tr>
+</tbody>
+</table>
+<p><strong>核心逻辑</strong>：SOUL 决定怎么说话，AGENTS 决定怎么干活，MEMORY 决定记住什么。这三个文件，直接决定了你的 AI 助手是什么性格、什么能力、有多懂你。</p>
+<p>下面详细拆解 3 个核心文件。</p>
+<hr>
+<h2 id="%E6%A0%B8%E5%BF%83-1soulmd--ai-%E7%9A%84%E6%80%A7%E6%A0%BC">核心 1：SOUL.md —— AI 的性格</h2>
+<p><strong>一句话</strong>：决定你的 AI 助手怎么说话、怎么做判断。</p>
+<p><strong>实际配置</strong>（Agent 小茶馆）：</p>
+<pre class="hljs"><code><div>语气：说人话，强口语，但保持专业
+判断方式：先给结论，再给证据
+分歧处理：给 A/B 两案 + 推荐案，不拖泥带水
+</div></code></pre>
+<p><strong>实际效果</strong>：</p>
+<ul>
+<li>你问 &quot;这个选题怎么样&quot;，它不会给一篇论文，而是先说 <strong>&quot;可以做，因为...&quot;</strong></li>
+<li>你们意见不一致时，它给出两个方案让你选，而不是争论不休</li>
+</ul>
+<p><strong>为什么重要</strong>：
+同样的工具、同样的模型，不同的 SOUL 配置，会呈现出完全不同的助手。有的像严谨的教授，有的像随和的朋友，有的像高效的助理。</p>
+<hr>
+<h2 id="%E6%A0%B8%E5%BF%83-2agentsmd--%E8%BF%90%E8%A1%8C%E5%AE%AA%E6%B3%95">核心 2：AGENTS.md —— 运行宪法</h2>
+<p><strong>一句话</strong>：定义 AI 助手的工作流程、任务流转、技能触发规则。</p>
+<p><strong>关键机制</strong>：</p>
+<p><strong>1. 启动检查清单</strong></p>
+<pre class="hljs"><code><div>每次会话开始前：
+1. 读 SOUL.md（知道怎么说话）
+2. 读 USER.md（知道用户是谁）
+3. 读 MEMORY.md（记住以前的事）
+4. 检查遗留任务（别漏事）
+</div></code></pre>
+<p><strong>2. 任务状态机</strong></p>
+<pre class="hljs"><code><div>NEW → SCOPING → COLLECTING → SYNTHESIZING → DRAFTING → REVIEW_READY → APPROVED → PACKAGED → SENT
+</div></code></pre>
+<p>每个任务都有明确状态，不会漏掉，不会乱。</p>
+<p><strong>3. 技能路由</strong></p>
+<pre class="hljs"><code><div>用户说 &quot;发公众号&quot; → 匹配 publish-wechat skill → 执行排版流程
+</div></code></pre>
+<p><strong>实际案例</strong>：
+今天你说 &quot;这篇发公众号&quot;，AGENTS.md 告诉 OpenClaw：</p>
+<ul>
+<li>匹配到 publish-wechat skill</li>
+<li>走 &quot;打开编辑器 → 应用主题 → 复制 → 粘贴 → 保存&quot; 流程</li>
+<li>任务状态从 NEW → SCOPING → ... → SENT</li>
+</ul>
+<p><strong>为什么重要</strong>：
+没有 AGENTS.md，AI 助手就像没有流程的公司，乱成一团。有了它，每个请求都有明确的处理路径，不会遗漏，不会重复。</p>
+<hr>
+<h2 id="%E6%A0%B8%E5%BF%83-3memorymd--%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86">核心 3：MEMORY.md —— 长期记忆</h2>
+<p><strong>一句话</strong>：沉淀稳定有效的经验，跨会话保持记忆。</p>
+<p><strong>实际配置</strong>（Agent 小茶馆）：</p>
+<pre class="hljs"><code><div>## 有效经验
+- 先定义问题，再搜集信息，减少无效调研
+- 每篇给 3 条可执行动作，转化更稳定
+
+## 失败模式
+- 观点太中性，导致行动建议不明确
+- 信息多但缺优先级，用户难落地
+
+## 用户偏好
+- 喜欢口语化、好理解的表达
+- 不接受无结论输出
+</div></code></pre>
+<p><strong>实际效果</strong>：</p>
+<ul>
+<li>第一周你纠正了 &quot;观点太中性&quot; 的问题</li>
+<li>第二周它自动记住，不用重复说</li>
+<li>一个月后，它比你更清楚什么方法对你有效</li>
+</ul>
+<p><strong>维护策略</strong>：每周更新，保持 70% 经验 + 30% 用户偏好。</p>
+<p><strong>为什么重要</strong>：
+没有 MEMORY.md，每次对话都是新的开始，AI 永远记不住你的习惯。有了它，AI 会越用越懂你，越用越顺手。</p>
+<hr>
+<h2 id="3-%E4%B8%AA%E8%BE%85%E5%8A%A9%E6%96%87%E4%BB%B6%E7%AE%80%E7%95%A5%E5%B8%A6%E8%BF%87">3 个辅助文件（简略带过）</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+<th>为什么辅助</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>USER.md</td>
+<td>用户偏好（时区、称呼、内容长度）</td>
+<td>有更好，没有也能跑</td>
+</tr>
+<tr>
+<td>TOOLS.md</td>
+<td>工具使用规范</td>
+<td>主要是约束，不是核心能力</td>
+</tr>
+<tr>
+<td>BOOTSTRAP.md</td>
+<td>启动自检（检查遗留任务）</td>
+<td>日常运维，不直接影响能力</td>
+</tr>
+</tbody>
+</table>
+<p>这三个文件让体验更好，但不决定 AI 助手的核心能力。</p>
+<hr>
+<h2 id="%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%A6%82%E4%BD%95%E8%81%94%E5%90%88%E7%94%9F%E6%95%88">配置文件如何联合生效</h2>
+<h3 id="%E5%AE%9E%E6%88%98%E4%BB%8A%E5%A4%A9%E8%BF%99%E7%AF%87%E6%96%87%E7%AB%A0%E7%9A%84%E8%AF%9E%E7%94%9F">实战：今天这篇文章的诞生</h3>
+<p><strong>你说</strong>：&quot;帮我再写一篇文章，介绍 openclaw&quot;</p>
+<p><strong>幕后流程</strong>：</p>
+<ol>
+<li><strong>BOOTSTRAP.md</strong> → 检查遗留任务</li>
+<li><strong>SOUL.md</strong> → 用 &quot;说人话、先给结论&quot; 的语气</li>
+<li><strong>USER.md</strong> → 知道你喜欢 &quot;短文优先&quot;</li>
+<li><strong>AGENTS.md</strong> → 匹配 &quot;内容创作&quot; 流程，生成 task_id</li>
+<li><strong>MEMORY.md</strong> → 记住之前经验（代码路径要具体、先结果后过程）</li>
+<li><strong>TOOLS.md</strong> → 使用搜索、写作工具</li>
+<li><strong>AGENTS.md</strong> → 按 &quot;结论-证据-行动&quot; 结构组织</li>
+</ol>
+<p><strong>结果</strong>：自动生成文章，保存到 publish_queue，等你确认。</p>
+<hr>
+<h2 id="3-%E6%9D%A1%E5%8F%AF%E6%89%A7%E8%A1%8C%E5%8A%A8%E4%BD%9C">3 条可执行动作</h2>
+<ol>
+<li>
+<p><strong>查看你的核心配置</strong>：打开 workspace 下的 SOUL.md 和 MEMORY.md，看看你的 AI 被设定了什么性格、记住了你什么</p>
+</li>
+<li>
+<p><strong>优化 SOUL.md</strong>：如果不满意 AI 的语气（太正式 / 太随意），直接编辑这个文件，重启后生效</p>
+</li>
+<li>
+<p><strong>建立个人 MEMORY.md</strong>：记录你和 AI 协作的有效经验，比如 &quot;技术文章要贴代码路径&quot;，让 AI 越用越懂你</p>
+</li>
+</ol>
+<hr>
+<h2 id="%E5%B0%8F%E7%BB%93">小结</h2>
+<p>OpenClaw 的 6 个配置文件，3 个是核心：</p>
+<ul>
+<li><strong>SOUL</strong> 是性格（价值观）</li>
+<li><strong>AGENTS</strong> 是流程（工作制度）</li>
+<li><strong>MEMORY</strong> 是记忆（经验沉淀）</li>
+</ul>
+<p>这三个文件，直接决定了你的 AI 助手是什么性格、什么能力、有多懂你。其他 3 个（USER、TOOLS、BOOTSTRAP）是辅助，让体验更好，但不决定核心能力。</p>
+<p><strong>一句话总结</strong>：想让你的 AI 助手更懂你？重点优化 SOUL、AGENTS、MEMORY 这三个文件。</p>
+<hr>
+<p>参考资料：OpenClaw 官方文档 https://docs.openclaw.ai</p>
+
+</body>
+</html>
