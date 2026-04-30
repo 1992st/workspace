@@ -128,3 +128,12 @@
 3. 夜间维护：索引重建、embedding、集合修复仅在夜间 cron 执行；白天若发现索引异常，只报告并转夜间任务。
 4. 证据回引：关键结论必须带来源路径（如 `memory/2026-04-07.md`、`MEMORY.md`）。
 5. 安全边界：未确认前不做破坏性操作（删除历史记忆、覆盖 `MEMORY.md`、批量清理）。
+
+## Cron Runtime Guardrails
+
+- 内容类 cron（晨扫、日终整合）优先复用 `memory/`、`tasks/`、`qmd query` 和现有文稿，不做无边界探索
+- 维护类 cron（QMD）只做 collection 检查、`qmd update --pull`、`qmd embed`、`qmd status`
+- 维护类 cron 禁止修改无关配置，禁止切换成内容研究任务
+- 若只是检查目录或索引，优先使用 `ls`、`find`、`grep`、`cat`
+- 需要 Python 时，只运行工作区已有脚本；禁止 `python3 -c` 和 here-doc Python
+- 失败时直接返回 blocked、失败步骤、原始错误

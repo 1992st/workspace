@@ -10,6 +10,7 @@
 - `policies/`：策略规范
 - `skills/`：技能配置与路由（`_manifest.yaml` + 各技能 `SKILL.md`）
 - `memory/`：每日运行日志
+- `research/xiaohongshu/`：小红书专题研究（`raw/` 原始样本，`analysis/` 分析稿，`knowledge/` 长期知识）
 
 ## 调度节奏
 - 每日 08:00：晨扫

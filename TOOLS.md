@@ -37,3 +37,16 @@
 
 ## 回退策略
 异常时停止外发，保留本地发布包并将任务标记 `NEEDS_INPUT`。
+
+## Cron 推荐命令
+
+- 内容检索：`qmd query ...`
+- 索引检查：`qmd status`
+- 维护更新：`qmd update --pull`
+- 向量重建：`qmd embed`
+- 目录巡检：`ls`、`find`、`grep`、`cat`
+
+禁用模式：
+- `python3 -c`
+- `python3 <<'PY'`
+- 将维护 cron 扩展成无关调研或配置改造任务

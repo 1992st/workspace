@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书配图 - Agent记忆3个坑</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .card {
+    width: 375px;
+    height: 500px;
+    background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(233,69,96,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .emoji { font-size: 48px; margin-bottom: 16px; }
+  .title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #a0a0a0;
+    line-height: 1.5;
+  }
+  .number-badge {
+    display: inline-block;
+    background: #e94560;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .content-text {
+    font-size: 15px;
+    color: #d0d0d0;
+    line-height: 1.8;
+    margin-bottom: 16px;
+  }
+  .highlight {
+    color: #e94560;
+    font-weight: 700;
+  }
+  .diagram {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .diagram-row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    font-size: 13px;
+    color: #fff;
+  }
+  .diagram-box {
+    background: rgba(233,69,96,0.2);
+    border: 1px solid #e94560;
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+  }
+  .diagram-arrow {
+    color: #e94560;
+    margin: 0 8px;
+    font-size: 16px;
+  }
+  .diagram-label {
+    font-size: 11px;
+    color: #a0a0a0;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+    flex-wrap: wrap;
+  }
+  .tag {
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #fff;
+  }
+  .tag-positive {
+    background: rgba(46,204,113,0.15);
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+  }
+  .tag-negative {
+    background: rgba(231,76,60,0.15);
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+  }
+  .quote {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    line-height: 1.5;
+    margin: 20px 0;
+    padding: 20px;
+    border-left: 4px solid #e94560;
+    background: rgba(233,69,96,0.05);
+    border-radius: 0 12px 12px 0;
+  }
+  .action-list {
+    list-style: none;
+  }
+  .action-list li {
+    font-size: 14px;
+    color: #d0d0d0;
+    line-height: 1.6;
+    margin: 10px 0;
+    padding-left: 24px;
+    position: relative;
+  }
+  .action-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #e94560;
+    font-weight: 700;
+  }
+  .footer-brand {
+    margin-top: auto;
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .footer-brand strong {
+    color: #e94560;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<!-- 图1：封面 -->
+<div class="card" id="cover">
+  <div class="emoji">🕳️</div>
+  <div class="title">做Agent记忆的<br>90%都踩过<br>这3个坑</div>
+  <div class="subtitle">我翻过100+开源项目<br>发现了这些扎心真相</div>
+  <div style="margin-top:auto; text-align:center; font-size:12px; color:#666;">
+    <span style="color:#e94560;">●</span> Agent观察室
+  </div>
+</div>
+
+<!-- 图2：坑1 - 备忘录陷阱 -->
+<div class="card" id="trap1">
+  <div class="number-badge">坑 1</div>
+  <div class="section-title">把记忆当成<br>"备忘录"<br>而不是"上下文引擎"</div>
+  <div class="content-text">
+    大多数人就是建个数据库，把对话历史往里塞。<br><br>
+    <span class="highlight">问题：</span>所有对话平等对待 → 关键信息被噪音淹没
+  </div>
+  <div class="diagram">
+    <div class="diagram-row">
+      <div class="diagram-box" style="font-size:12px;">短期上下文<br><span style="font-size:10px;color:#aaa;">当前对话</span></div>
+      <div class="diagram-arrow">→</div>
+      <div class="diagram-box" style="font-size:12px;">工作记忆<br><span style="font-size:10px;color:#aaa;">本轮关键</span></div>
+      <div class="diagram-arrow">→</div>
+      <div class="diagram-box" style="font-size:12px;">长期记忆<br><span style="font-size:10px;color:#aaa;">用户画像</span></div>
+    </div>
+    <div class="diagram-label">每层有不同的更新策略和衰减机制</div>
+  </div>
+</div>
+
+<!-- 图3：坑2 - 向量库陷阱 -->
+<div class="card" id="trap2">
+  <div class="number-badge">坑 2</div>
+  <div class="section-title">以为向量数据库<br>就是记忆的全部</div>
+  <div class="content-text">
+    RAG很火，但向量检索只擅长"找相似"，不擅长"找因果"和"找时序"。<br><br>
+    <span class="highlight">单一存储 = 单腿走路</span>
+  </div>
+  <div class="diagram">
+    <div class="tag-row">
+      <div class="tag" style="border-color:#3498db; color:#3498db;">🔍 向量库<br><span style="font-size:10px;">语义检索</span></div>
+      <div class="tag" style="border-color:#9b59b6; color:#9b59b6;">🕸️ 图数据库<br><span style="font-size:10px;">关系推理</span></div>
+      <div class="tag" style="border-color:#f39c12; color:#f39c12;">📋 结构化存储<br><span style="font-size:10px;">精确召回</span></div>
+    </div>
+    <div class="diagram-label">记忆至少需要3种存储形态</div>
+  </div>
+</div>
+
+<!-- 图4：坑3 - 负向记忆缺失 -->
+<div class="card" id="trap3">
+  <div class="number-badge">坑 3</div>
+  <div class="section-title">只记"说了什么"<br>不记"为什么没说"</div>
+  <div class="content-text">
+    Agent记住了用户指令，但记不住用户的<span class="highlight">否定和修正</span>。<br><br>
+    没有"负向记忆"机制 = 只有正向累积，没有约束边界。
+  </div>
+  <div class="diagram">
+    <div class="tag-row">
+      <div class="tag-positive">✅ 用户喜欢简洁回答</div>
+      <div class="tag-negative">❌ 用户明确拒绝代码示例</div>
+    </div>
+    <div class="diagram-label">正负向约束都要参与决策权重</div>
+  </div>
+</div>
+
+<!-- 图5：总结卡 -->
+<div class="card" id="summary">
+  <div class="emoji">💡</div>
+  <div class="quote">
+    Agent记忆不是"存得多"<br>
+    而是<br>
+    "记得对、分得清、想得起来"
+  </div>
+  <ul class="action-list">
+    <li>检查你的Agent：用户偏好和对话历史混在一起？拆成2层</li>
+    <li>做一次"负向记忆"审计：翻20轮对话，找"不要XX"</li>
+    <li>没做记忆分层？今晚动手：短期上下文 vs 长期记忆</li>
+  </ul>
+  <div class="footer-brand">
+    <strong>Agent观察室</strong> · 每周拆解一个Agent真相
+  </div>
+</div>
+
+</body>
+</html>

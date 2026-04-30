@@ -68,3 +68,32 @@ skills:
         - "html转png"
         - "网页转png"
         - "chrome截图"
+  - id: xiaohongshu-ops
+    path: skills/xiaohongshu-ops/SKILL.md
+    priority: 85
+    exclusive: false
+    trigger:
+      mode: semantic_first
+      confidence_threshold: 0.7
+      keywords:
+        must_include:
+          - "小红书"
+        include_any:
+          - "选题"
+          - "运营"
+          - "研究"
+          - "爆款"
+          - "低粉高赞"
+          - "平台"
+          - "盘"
+          - "提炼"
+          - "复盘"
+      commands:
+        - "盘一下这个小红书选题"
+        - "做一轮小红书研究"
+        - "看看小红书平台怎么写这个题"
+        - "跑一轮小红书运营分析"
+        - "拆一下这批小红书爆款"
+        - "整理这波小红书打法"
+        - "研究下这个题在小红书能不能做"
+        - "补一轮小红书运营方法"
