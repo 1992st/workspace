@@ -1,0 +1,49 @@
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local environment files
+.env
+.env.*
+!.env.template
+!.env.example
+!config/.env.template
+
+# Logs and runtime failure records
+logs/**
+*.jsonl
+
+# Local databases and generated state
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated reports and review outputs
+data/reports/
+reviews/daily/
+reviews/weekly/
+
+# Active watchlist generated artifacts
+data/watchlist/active/*/analysis/
+data/watchlist/active/*/predictions/
+data/watchlist/active/*/reviews/
+data/watchlist/active/*/special/
+data/watchlist/active/*/*_db.sqlite
+data/watchlist/active/*/*_分析.md
+data/watchlist/active/*/*_股东资金关联分析.md
+data/watchlist/active/*/*_公告原文.pdf
+
+# Top-level watchlist generated artifacts
+watchlist/*/analysis/
+watchlist/*/history/
+watchlist/*/special/
+
+# Skill runtime outputs
+skills/stock-skill/runtime_data/
+
+# Book runtime caches only
+books/runtime/__pycache__/
+books/runtime/tests/__pycache__/
+books/reminiscences_2005/

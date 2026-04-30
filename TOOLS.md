@@ -10,9 +10,10 @@
 - KIMI_API_KEY
 
 ## 数据源优先级
-1. akshare (主)
-2. tushare (备，需 token)
-3. 本地缓存 SQLite
+1. skills/stock-data/scripts/stock_client.py (正式入口)
+2. stock-skill (标准接口层)
+3. browser_fetch (quote 降级)
+4. 本地缓存
 
 ## 可写目录
 - data/watchlist/active/{code}/
@@ -25,5 +26,18 @@
 - market_analysis.md, sector_analysis.md, stock_analysis.md, news_analysis.md, review_analysis.md
 
 ## 常用脚本位置
-- skills/stock-data/scripts/fetch_daily.py
+- skills/stock-data/scripts/stock_client.py
+- skills/stock-data/scripts/browser_fetch.py
 - skills/daily-review/scripts/review.py
+
+## Cron 推荐命令
+
+- 数据检查：`ls`、`find`、`cat`、`grep`、`sqlite3`
+- 数据获取：`python3 skills/stock-data/scripts/stock_client.py ...`
+- 复盘验证：`python3 skills/daily-review/scripts/review.py ...`
+- 索引/检索：`qmd query ...`、`qmd status`
+
+禁用模式：
+- `python3 -c`
+- `python3 <<'PY'`
+- 临时创建一次性分析脚本后立即执行

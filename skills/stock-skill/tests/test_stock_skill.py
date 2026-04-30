@@ -14,10 +14,12 @@ if str(RUNTIME_ROOT) not in sys.path:
     sys.path.insert(0, str(RUNTIME_ROOT))
 
 import providers.akshare_provider as akshare_provider_module
+from analysis_engine import _build_rumor_check, _infer_relative_strength
 from shared.cache import FileCache
 from shared.utils import cache_key
 from stock_skill import StockSkill
 from providers.akshare_provider import AkshareProvider
+from shared.failure_log import ToolFailureRecorder
 
 
 class StubAkProvider:
@@ -67,6 +69,7 @@ class StubAkProvider:
         data = self.quotes_batch_get(payload)
         data["market_change_pct"] = 1.1
         data["total_amount"] = 5000
+        data["top_sector_list"] = [{"sector": "证券", "change_pct": 2.1}]
         return data
 
     def news_stock_get(self, payload):
@@ -80,6 +83,64 @@ class StubAkProvider:
 
     def flow_order_size_get(self, payload):
         return {"date": "2026-04-24", "big_order_ratio": 0.7, "small_order_ratio": 0.2, "buy_sell_imbalance": 0.1}
+
+    def etf_pcf_get(self, payload):
+        return {
+            "fund_code": "512000",
+            "date": "2026-04-24",
+            "pcf_items": [{"symbol": "601211", "name": "国泰海通", "quantity": 1000}],
+            "cash_component": 0.0,
+            "publish_time": "2026-04-24T08:30:00",
+            "availability": "pre_open_available",
+            "session_constraint": "盘前可获取PCF，不能代表盘中实时净申赎",
+            "is_pcf_not_real_flow": True,
+        }
+
+    def margin_balance_get(self, payload):
+        return {
+            "symbol": "601211",
+            "requested_date": "2026-04-24",
+            "as_of_date": "2026-04-23",
+            "is_latest_trading_day": False,
+            "availability": "previous_trading_day_only",
+            "session_constraint": "盘中默认上一交易日口径",
+            "financing_balance": 1000.0,
+            "financing_buy": 120.0,
+            "financing_repay": 80.0,
+            "securities_lending_balance": 50.0,
+            "balance_change": 40.0,
+        }
+
+    def hsgt_top10_get(self, payload):
+        return {
+            "date": "2026-04-24",
+            "channel": "shanghai_connect",
+            "availability": "post_close_only",
+            "items": [{"symbol": "601211", "name": "国泰海通", "net_buy": 300.0, "buy_amount": 500.0, "sell_amount": 200.0, "turnover": 700.0}],
+        }
+
+    def lhb_detail_get(self, payload):
+        return {
+            "symbol": "601211",
+            "date": "2026-04-24",
+            "availability": "conditional_only",
+            "eligible": False,
+            "reason": "未满足当日交易公开信息条件或无公开记录",
+            "items": [],
+            "institution_summary": {"buy_amount": 0.0, "sell_amount": 0.0},
+            "northbound_seat_present": False,
+        }
+
+    def block_trade_get(self, payload):
+        return {
+            "symbol": "601211",
+            "date": "2026-04-24",
+            "availability": "post_close_only",
+            "items": [{"price": 10.0, "volume": 1000, "amount": 10000.0, "discount_rate": -2.0, "buyer": "机构A", "seller": "机构B"}],
+            "total_amount": 10000.0,
+            "avg_discount_rate": -2.0,
+            "buyer_seller_pairs": [{"buyer": "机构A", "seller": "机构B"}],
+        }
 
     def fundamental_valuation_get(self, payload):
         return {"symbol": "601211", "pe_ttm": 12, "pb": 1.1, "market_cap": 1000000000}
@@ -145,8 +206,10 @@ class StockSkillTests(unittest.TestCase):
         temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
         cache = FileCache(Path(temp_dir.name))
+        failure_recorder = ToolFailureRecorder(Path(temp_dir.name) / "tool_failures")
         return StockSkill(
             cache=cache,
+            failure_recorder=failure_recorder,
             ak_provider=ak_provider or StubAkProvider(),
             http_provider=http_provider or StubHttpProvider(),
         )
@@ -193,10 +256,236 @@ class StockSkillTests(unittest.TestCase):
         result = skill.run({"action": "fundamental.metrics.get", "symbol": "601211"})
         json.dumps(result.to_dict(), ensure_ascii=False)
 
+    def test_extended_data_actions_return_expected_contracts(self):
+        skill = self.make_skill()
+        etf_result = skill.run({"action": "etf.pcf.get", "fund_code": "512000"})
+        margin_result = skill.run({"action": "margin.balance.get", "symbol": "601211", "date": "2026-04-24"})
+        hsgt_result = skill.run({"action": "hsgt.top10.get", "date": "2026-04-24"})
+        lhb_result = skill.run({"action": "lhb.detail.get", "symbol": "601211", "date": "2026-04-24"})
+        block_result = skill.run({"action": "block_trade.get", "symbol": "601211", "date": "2026-04-24"})
+        self.assertEqual(etf_result.status, "ok")
+        self.assertEqual(etf_result.data["data"]["availability"], "pre_open_available")
+        self.assertEqual(margin_result.status, "ok")
+        self.assertEqual(margin_result.data["data"]["availability"], "previous_trading_day_only")
+        self.assertEqual(hsgt_result.status, "ok")
+        self.assertEqual(hsgt_result.data["data"]["availability"], "post_close_only")
+        self.assertEqual(lhb_result.status, "ok")
+        self.assertFalse(lhb_result.data["data"]["eligible"])
+        self.assertEqual(block_result.status, "ok")
+        self.assertEqual(block_result.data["data"]["avg_discount_rate"], -2.0)
+
     def test_cache_key_ignores_control_flags(self):
         base = {"action": "quote.get", "symbol": "601211", "market": "CN-A"}
         forced = {"action": "quote.get", "symbol": "601211", "market": "CN-A", "force_refresh": True, "timeout_ms": 5000}
         self.assertEqual(cache_key("quote.get", base), cache_key("quote.get", forced))
+
+    def test_analysis_stock_prepare_returns_prompt_bundle(self):
+        skill = self.make_skill()
+        result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        self.assertEqual(result.status, "ok")
+        body = result.data
+        self.assertEqual(body["data"]["symbol"], "601211")
+        self.assertEqual(body["data"]["prompt_bundle"]["version"], "v1")
+        self.assertTrue(body["data"]["prompt_bundle"]["compiled_prompt"])
+        self.assertEqual(body["data"]["prompt_bundle"]["strategy_version"], "v2")
+        self.assertEqual(body["data"]["prompt_bundle"]["activation_source"], "current")
+        self.assertIn("REM-R001", body["data"]["prompt_bundle"]["injected_strategy_ids"])
+        self.assertIn("REM-R004", body["data"]["prompt_bundle"]["candidate_strategy_ids"])
+        self.assertIn("evidence_threshold", body["data"]["data_quality"])
+        self.assertIn("market_context", body["data"])
+        self.assertIn("capital_context", body["data"])
+        self.assertIn("expectation_context", body["data"])
+        self.assertTrue(body["data"]["news_signal_board"])
+
+    def test_analysis_stock_prepare_selects_sell_side_strategies(self):
+        skill = self.make_skill()
+        result = skill.run(
+            {"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"}
+        )
+        self.assertEqual(result.status, "ok")
+        injected = result.data["data"]["prompt_bundle"]["injected_strategy_ids"]
+        self.assertIn("REM-R007", injected)
+        self.assertIn("REM-R009", injected)
+        self.assertNotIn("REM-R004", injected)
+
+    def _valid_analysis_result(self, prepared_data):
+        injected = prepared_data["prompt_bundle"]["injected_strategy_ids"]
+        cited = injected[:2] if len(injected) >= 2 else injected
+        return {
+            "market_regime": {
+                "current_regime": "theme_rotation",
+                "risk_appetite": "high",
+                "main_themes": ["证券"],
+                "incremental_capital_direction": "券商",
+                "next_verification_events": ["次日竞价资金承接"],
+            },
+            "sector_positioning": {
+                "sector": "证券",
+                "theme_role": "main_theme",
+                "leader_status": "confirmed",
+                "continuity": "good",
+            },
+            "expectation_analysis": {
+                "market_expectation": "risk-on",
+                "stock_expectation": "券商弹性延续",
+                "priced_in": "partially_priced_in",
+                "expectation_gap": "若量能继续放大仍有补涨空间",
+                "catalyst_path": ["market", "sector", "stock"],
+                "supporting_evidence": [
+                    {"category": "market", "detail": "风险偏好抬升"},
+                    {"category": "sector", "detail": "券商板块领涨"},
+                    {"category": "capital", "detail": "主力净流入为正"},
+                ],
+            },
+            "capital_confirmation": {
+                "verdict": "confirmed",
+                "main_flow": "positive",
+                "order_structure": "big_order_dominant",
+                "price_volume_fit": "yes",
+                "relative_strength": "stronger_than_index",
+                "notes": "放量且强于指数。",
+            },
+            "scenario_plan": {
+                "bull_case": "放量突破后加速",
+                "base_case": "维持强势震荡",
+                "bear_case": "冲高回落失守均线",
+            },
+            "trigger_and_invalidation": {
+                "entry_triggers": ["放量站稳前高"],
+                "hold_triggers": ["主力持续净流入"],
+                "invalidation_signals": ["跌破前一日低点"],
+                "exit_triggers": ["放量滞涨且资金转负"],
+            },
+            "source_reliability": {
+                "primary_sources": ["巨潮资讯", "Reuters"],
+                "tradeable_signal_threshold": "S or A+capital confirmation",
+            },
+            "rumor_check": {
+                "final_verdict": "official_confirmed",
+            },
+            "recommendation": {"action": "SELL", "confidence": 72, "position_size": "MODERATE"},
+            "reasoning": {"primary_factors": ["trend broken"]},
+            "summary": "减仓或退出，等待结构修复。",
+            "strategy_usage": {
+                "strategy_version": prepared_data["prompt_bundle"]["strategy_version"],
+                "injected_strategy_ids": prepared_data["prompt_bundle"]["injected_strategy_ids"],
+                "cited_strategy_ids": cited,
+                "violated_strategy_ids": [],
+                "selection_reason": prepared_data["prompt_bundle"]["selection_reason"],
+                "strategy_notes": "卖出结论主要受纪律止损和反弹减仓策略约束。",
+            },
+        }
+
+    def test_analysis_result_validate_accepts_consistent_strategy_usage(self):
+        skill = self.make_skill()
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"})
+        data = prepared.data["data"]
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": self._valid_analysis_result(data),
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "ok")
+        self.assertTrue(result.data["data"]["valid"])
+
+    def test_analysis_result_validate_rejects_non_injected_strategy_ids(self):
+        skill = self.make_skill()
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": {
+                **self._valid_analysis_result(data),
+                "recommendation": {"action": "BUY", "confidence": 75, "position_size": "MODERATE"},
+                "strategy_usage": {
+                    "strategy_version": data["prompt_bundle"]["strategy_version"],
+                    "injected_strategy_ids": data["prompt_bundle"]["injected_strategy_ids"],
+                    "cited_strategy_ids": ["FAKE-R999", "REM-R001"],
+                    "violated_strategy_ids": [],
+                    "selection_reason": data["prompt_bundle"]["selection_reason"],
+                    "strategy_notes": "引用了错误策略，应该被拦截。",
+                },
+            },
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        self.assertIn("non-injected strategies", " ".join(result.data["data"]["errors"]))
+
+    def test_analysis_result_validate_rejects_missing_expectation_and_trigger_blocks(self):
+        skill = self.make_skill()
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result.pop("expectation_analysis")
+        analysis_result["trigger_and_invalidation"] = {}
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        joined = " ".join(result.data["data"]["errors"])
+        self.assertIn("expectation_analysis", joined)
+        self.assertIn("trigger_and_invalidation", joined)
+
+    def test_tool_failure_is_recorded(self):
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        cache = FileCache(Path(temp_dir.name) / "cache")
+        failure_root = Path(temp_dir.name) / "tool_failures"
+        skill = StockSkill(
+            cache=cache,
+            failure_recorder=ToolFailureRecorder(failure_root),
+            ak_provider=FailingAkProvider(),
+            http_provider=WorkingHttpProvider(),
+        )
+        result = skill.run({"action": "quote.get", "symbol": "601211", "force_refresh": True})
+        self.assertEqual(result.status, "degraded")
+        files = sorted(failure_root.glob("*.jsonl"))
+        self.assertTrue(files)
+        content = files[0].read_text(encoding="utf-8")
+        self.assertIn('"event_type": "provider_failure"', content)
+        self.assertIn('"provider": "akshare"', content)
+
+    def test_analysis_stock_prepare_rumor_check_ignores_market_only_official_news(self):
+        class MixedNewsProvider(StubAkProvider):
+            def kline_get(self, payload):
+                return {
+                    "symbol": "601211",
+                    "period": "daily",
+                    "adjust": "none",
+                    "bars": [
+                        {"date": "2026-04-23", "close": 10.0},
+                        {"date": "2026-04-24", "close": 10.1},
+                    ],
+                }
+
+            def news_market_get(self, payload):
+                return {
+                    "events": [
+                        {"title": "国务院部署稳市场政策", "source": "国务院", "publish_time": "2026-04-24"},
+                    ]
+                }
+
+            def news_stock_get(self, payload):
+                return {
+                    "symbol": "601211",
+                    "events": [
+                        {"title": "市场传闻公司将获重大订单", "source": "某论坛", "publish_time": "2026-04-24", "url": "https://example.com"},
+                    ],
+                }
+
+        skill = self.make_skill(ak_provider=MixedNewsProvider())
+        result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        self.assertEqual(result.status, "ok")
+        rumor_check = result.data["data"]["rumor_check"]
+        self.assertEqual(rumor_check["final_verdict"], "rumor_only")
 
 
 class ProviderBehaviorTests(unittest.TestCase):
@@ -255,6 +544,33 @@ class ProviderBehaviorTests(unittest.TestCase):
         result = provider.sector_map_get({"symbol": "688001"})
         self.assertEqual(result["primary_sector"], "半导体")
         self.assertEqual(result["concept_tags"], ["AI芯片"])
+
+    def test_infer_relative_strength_uses_same_day_horizon(self):
+        kline = [
+            {"date": "2026-04-21", "close": 10.0},
+            {"date": "2026-04-22", "close": 10.0},
+            {"date": "2026-04-23", "close": 10.0},
+            {"date": "2026-04-24", "close": 9.5},
+        ]
+        result = _infer_relative_strength(kline, {"change_pct": -0.2})
+        self.assertEqual(result, "weaker_than_index")
+
+    def test_build_rumor_check_only_uses_stock_scope_news(self):
+        news_signal_board = [
+            {
+                "scope": "market",
+                "source_grade": "S",
+                "headline": "国务院稳市场",
+            },
+            {
+                "scope": "stock",
+                "source_grade": "C",
+                "headline": "公司将获重大订单传闻",
+            },
+        ]
+        result = _build_rumor_check(news_signal_board, {"capital_verdict": "confirmed"})
+        self.assertEqual(result["final_verdict"], "rumor_only")
+        self.assertFalse(result["has_official_source"])
 
 
 if __name__ == "__main__":

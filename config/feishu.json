@@ -1,0 +1,5 @@
+{
+  "app_id": "${FEISHU_APP_ID}",
+  "app_secret": "${FEISHU_APP_SECRET}",
+  "chat_id": "oc_f403ab69c2c499a1aaa16066241842fb"
+}

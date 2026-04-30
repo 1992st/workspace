@@ -49,6 +49,12 @@ CREATE TABLE IF NOT EXISTS analysis_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     analysis_date DATE NOT NULL,
     analysis_type VARCHAR(20) NOT NULL,  -- 'technical', 'fundamental', 'comprehensive'
+    prompt_version VARCHAR(10),          -- Prompt 版本
+    strategy_version VARCHAR(10),        -- 策略编译版本
+    injected_strategy_ids TEXT,          -- JSON 数组：实际注入的策略ID
+    selection_reason TEXT,               -- JSON 数组：策略选择原因
+    violated_strategy_ids TEXT,          -- JSON 数组：违反的策略ID
+    strategy_citations TEXT,             -- JSON 数组：分析中引用的策略ID
     market_env TEXT,                     -- 大盘环境描述
     sector_status TEXT,                  -- 板块状态
     technical_summary TEXT,              -- 技术面分析摘要
@@ -72,7 +78,10 @@ CREATE TABLE IF NOT EXISTS prediction_log (
     stop_loss_price DECIMAL(10, 4),
     reasoning TEXT,                        -- 预测理由
     market_context TEXT,                     -- 当时市场环境
+    prompt_version VARCHAR(10),              -- 使用的 prompt 版本
     strategy_version VARCHAR(10),            -- 使用的策略版本
+    injected_strategy_ids TEXT,              -- JSON 数组：实际注入的策略ID
+    selection_reason TEXT,                   -- JSON 数组：策略选择原因
     llm_model VARCHAR(50),                   -- 使用的 LLM 模型
     llm_raw_response TEXT,                   -- LLM 原始输出
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

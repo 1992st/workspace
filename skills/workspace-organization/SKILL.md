@@ -10,6 +10,10 @@ version: 1.0
 
 保持 `/Volumes/zhangstExtern/openclaw/workspace/win_stock/` 目录结构清晰有序，所有文件都有明确归属，避免混乱和重复。
 
+补充约束：
+- 正式自选股目录只有 `data/watchlist/active/{code}/`
+- 根目录旧 `watchlist/` 若存在，只能作为 legacy 归档，不能再作为运行时写入入口
+
 ## 核心目录结构
 
 ```
@@ -36,8 +40,8 @@ win_stock/
 │   └── archive/           # 废弃版本
 │
 ├── data/                 # 数据目录
-│   ├── watchlist/         # 自选股档案
-│   │   ├── active/        # 当前自选股（每只股票独立目录）
+│   ├── watchlist/         # 自选股数据根目录
+│   │   ├── active/        # 当前唯一正式自选股目录（每只股票独立目录）
 │   │   │   └── {code}/    # 如: 000001/
 │   │   │       ├── {code}_db.sqlite      # 股票数据库
 │   │   │       ├── profile.md            # 股票档案

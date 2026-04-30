@@ -1,0 +1,15 @@
+{
+  "symbol": "601211",
+  "name": "国泰海通",
+  "price": 16.12,
+  "change": -0.11,
+  "change_pct": -0.68,
+  "open": 16.15,
+  "high": 16.42,
+  "low": 16.06,
+  "pre_close": 16.23,
+  "volume": 1516012,
+  "amount": 2460913018.0,
+  "timestamp": "2026-04-28T17:12:06",
+  "turnover_rate": 1.12
+}

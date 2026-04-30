@@ -1,0 +1,67 @@
+{
+  "buy_watch": {
+    "action_intents": [
+      "buy",
+      "watch",
+      "observe",
+      "build"
+    ],
+    "include_tags": [
+      "buy_decision",
+      "trend_following",
+      "timing"
+    ]
+  },
+  "sell_hold": {
+    "action_intents": [
+      "sell",
+      "hold",
+      "trim",
+      "exit",
+      "reduce"
+    ],
+    "include_tags": [
+      "sell_decision",
+      "downside_defense",
+      "profit_protection"
+    ]
+  },
+  "strong_market": {
+    "action_intents": [
+      "buy",
+      "watch",
+      "observe",
+      "build"
+    ],
+    "market_bias": [
+      "bullish"
+    ],
+    "include_tags": [
+      "trend_following",
+      "buy_decision"
+    ]
+  },
+  "weak_market": {
+    "action_intents": [
+      "sell",
+      "hold",
+      "trim",
+      "exit",
+      "reduce"
+    ],
+    "market_bias": [
+      "bearish"
+    ],
+    "include_tags": [
+      "sell_decision",
+      "downside_defense"
+    ]
+  },
+  "insufficient_data": {
+    "confidence_gate": [
+      "insufficient_data"
+    ],
+    "include_tags": [],
+    "note": "no extra conditional strategy should be injected when key evidence is missing"
+  }
+}

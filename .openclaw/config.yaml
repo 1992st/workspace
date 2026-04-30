@@ -1,0 +1,8 @@
+agents:
+  defaults:
+    timeoutSeconds: 180
+    
+cronJobs:
+  - name: stock-morning-analysis
+    enabled: false
+    description: 已禁用 - 功能由 stock-realtime-monitor 覆盖

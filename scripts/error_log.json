@@ -1,0 +1,11 @@
+{
+  "error": "pandas_dataframe_creation",
+  "description": "Failed to create DataFrame due to column mismatch",
+  "issue": "Sample shows 6 fields but pandas reports 7 columns",
+  "possible_causes": [
+    "Data contains nested arrays or mixed types",
+    "Some rows have different field counts",
+    "Special characters in data causing parsing issues"
+  ],
+  "resolution": "Need to inspect raw JSON structure before DataFrame creation"
+}

@@ -1,59 +1,61 @@
 ---
 name: daily-review
-description: Win_Stock 每日复盘 Skill - 收盘后自动复盘，记录正确/错误原因，积累股性理解
-version: 1.0
+description: Win_Stock 每日复盘 Skill - 收盘后自动复盘，验证预测、分析偏差、积累股性理解
+version: 2.0
 ---
 
 # 每日复盘 Skill
 
-## 目标
+## 核心原则
 
-建立每日收盘后的系统化复盘机制，验证前日预测、分析偏差原因、积累对个股和资本的深度理解。
+**1. 每日必须复盘**
+- 收盘后 30 分钟内完成
+- 不复盘 = 不学习 = 不进化
+- 所有预测必须验证，不能漏掉
 
-## 复盘时间
+**2. 诚实面对错误**
+- 错了就是错了，不找借口
+- 分析偏差原因，记录到数据库
+- 更新股性理解，下次改进
 
-**每日 16:30**（收盘后 30 分钟，数据稳定后）
+**3. 每只股票独立积累**
+- 每只股票有自己的"性格档案"
+- 记录该股的操盘风格、消息敏感度、技术特征
+- 长期积累，形成对个股的深度理解
 
 ## 复盘流程
 
 ```
-开始复盘
-  │
-  ▼
+收盘后 16:30 启动复盘
+    │
+    ▼
 ┌─────────────────┐
-│ 1. 验证昨日预测  │
-│ • 查询昨日预测  │
+│ 1. 验证昨日预测  │ ← 查询 prediction_log 表中昨日记录
 │ • 对比实际走势  │
 │ • 标记正确/错误 │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│ 2. 偏差分析      │
-│ • 为什么错了？  │
-│ • 遗漏了什么？  │
-│ • 市场发生了什么？│
+│ 2. 深度偏差分析  │ ← 为什么错了？
+│ • 遗漏因素      │
+│ • 市场意外      │
+│ • 资本行为异常  │
+│ • 认知偏差检查  │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│ 3. 资本行为观察  │
-│ • 主力今天做了什么？│
-│ • 成交量异常吗？  │
-│ • 分时图特征    │
+│ 3. 更新股性理解  │ ← 写入 stock_character 表
+│ • 波动特征      │
+│ • 资金特征      │
+│ • 消息敏感度    │
+│ • 技术特征      │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│ 4. 更新股性理解  │
-│ • 这只股票的性格 │
-│ • 新的行为模式  │
-│ • 修正之前的认知│
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ 5. 生成复盘报告  │
+│ 4. 生成复盘报告  │ ← 写入 review_log 表 + 文件
 │ • 整体准确率    │
 │ • 个股复盘      │
 │ • 教训总结      │
@@ -61,345 +63,328 @@ version: 1.0
          │
          ▼
 ┌─────────────────┐
-│ 6. 归档存储      │
-│ • 数据库更新    │
-│ • 报告文件      │
-│ • 股票档案更新  │
+│ 5. 更新股票档案  │ ← 更新 profile.md
+│ • 最新复盘索引  │
+│ • 股性观察更新  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ 6. 策略优化建议  │ ← 如果连续错误，提示优化 prompt
+│ • Prompt效果评估 │
+│ • 分析方法调整  │
 └─────────────────┘
 ```
 
-## 复盘维度
+## 验证规则
 
-### 1. 预测验证
+### 预测正确性判断
 
-#### 验证规则
-```
-买入预测:
-  - 次日上涨 > 2%: 正确 ✅
-  - 次日上涨 0-2%: 部分正确 ⚠️
-  - 次日下跌: 错误 ❌
-
-卖出预测:
-  - 次日下跌 > 2%: 正确 ✅
-  - 次日下跌 0-2%: 部分正确 ⚠️
-  - 次日上涨: 错误 ❌
-
-持有预测:
-  - 次日波动 < 2%: 正确 ✅
-  - 次日波动 2-4%: 部分正确 ⚠️
-  - 次日波动 > 4%: 错误 ❌
-```
-
-#### 收益计算
 ```python
-def calculate_returns(prediction, actual_data):
+def verify_prediction(prediction, actual):
+    """
+    验证预测正确性
+    返回: (是否正确, 准确程度, 收益计算)
+    """
+    action = prediction['action']
+    actual_change = actual['change_pct']
+    
+    if action == 'BUY':
+        if actual_change > 2:
+            return True, '完全正确', actual_change
+        elif actual_change > 0:
+            return True, '部分正确', actual_change
+        else:
+            return False, '错误', actual_change
+    
+    elif action == 'SELL':
+        if actual_change < -2:
+            return True, '完全正确', actual_change
+        elif actual_change < 0:
+            return True, '部分正确', actual_change
+        else:
+            return False, '错误', actual_change
+    
+    elif action == 'HOLD':
+        if abs(actual_change) < 2:
+            return True, '完全正确', actual_change
+        elif abs(actual_change) < 4:
+            return True, '部分正确', actual_change
+        else:
+            return False, '错误', actual_change
+    
+    elif action == 'WATCH':
+        # WATCH 不判断对错，只记录观察
+        return None, '观察中', actual_change
+```
+
+### 收益计算
+
+```python
+def calculate_returns(prediction, actual):
     """
     计算预测的收益指标
     """
-    results = {
-        'max_profit_pct': (actual_data['high'] - prediction['price_at_prediction']) / prediction['price_at_prediction'] * 100,
-        'max_loss_pct': (actual_data['low'] - prediction['price_at_prediction']) / prediction['price_at_prediction'] * 100,
-        'final_return_pct': (actual_data['close'] - prediction['price_at_prediction']) / prediction['price_at_prediction'] * 100,
-        'hit_target': actual_data['high'] >= prediction['target_price'] if prediction['target_price'] else None,
-        'hit_stop_loss': actual_data['low'] <= prediction['stop_loss_price'] if prediction['stop_loss_price'] else None
+    entry = prediction.get('price_at_prediction', actual['pre_close'])
+    
+    return {
+        'max_profit_pct': (actual['high'] - entry) / entry * 100,
+        'max_loss_pct': (actual['low'] - entry) / entry * 100,
+        'final_return_pct': (actual['close'] - entry) / entry * 100,
+        'hit_target': actual['high'] >= prediction['target_price'] if prediction.get('target_price') else None,
+        'hit_stop_loss': actual['low'] <= prediction['stop_loss_price'] if prediction.get('stop_loss_price') else None,
+        'risk_reward_ratio': None  # 计算风险收益比
     }
-    return results
 ```
 
-### 2. 偏差原因分析
+## 偏差分析框架
 
-#### 常见偏差类型
-```
-1. 大盘影响
-   - 系统性风险导致个股跟随下跌
-   - 板块轮动导致资金流出
+### 偏差原因分类
 
-2. 消息影响
-   - 突发利好/利空
-   - 政策变化
-   - 公司公告
-
-3. 技术误判
-   - 形态识别错误
-   - 支撑/阻力判断错误
-   - 指标信号滞后
-
-4. 资本行为
-   - 主力洗盘
-   - 意外出货
-   - 新主力介入
-
-5. 情绪因素
-   - 市场恐慌
-   - 过度乐观
-   - 羊群效应
-```
-
-#### 偏差分析 Prompt
-```
-你是一位交易复盘专家，请分析以下预测的偏差原因。
-
-## 预测信息
-- 股票: {stock_name}({stock_code})
-- 预测日期: {prediction_date}
-- 预测操作: {action}
-- 预测理由: {reasoning}
-
-## 实际走势
-- 次日开盘: {open}
-- 最高: {high}
-- 最低: {low}
-- 收盘: {close}
-- 涨跌幅: {change_pct}%
-- 成交量: {volume}
-
-## 市场环境
-- 大盘涨跌: {market_change}%
-- 板块涨跌: {sector_change}%
-- 当日重要新闻: {news}
-
-## 分析要求
-1. 预测是否正确？
-2. 如果错误，主要原因是什么？
-3. 分析时遗漏了什么关键因素？
-4. 市场发生了什么意外？
-5. 资本行为有什么异常？
-6. 下次分析时应该如何改进？
-
-## 输出格式
-{
-  "is_correct": true|false,
-  "primary_deviation_reason": "...",
-  "missed_factors": ["..."],
-  "market_surprise": "...",
-  "capital_behavior": "...",
-  "improvement_suggestion": "...",
-  "lesson_learned": "..."
+```python
+DEVIATION_REASONS = {
+    'market': {
+        'name': '大盘影响',
+        'examples': ['系统性风险', '板块轮动', '政策变化']
+    },
+    'news': {
+        'name': '消息影响',
+        'examples': ['突发利好', '突发利空', '公告超预期']
+    },
+    'technical': {
+        'name': '技术误判',
+        'examples': ['形态识别错误', '支撑阻力判断错误', '指标信号滞后']
+    },
+    'capital': {
+        'name': '资本行为',
+        'examples': ['主力洗盘', '意外出货', '新主力介入']
+    },
+    'sentiment': {
+        'name': '情绪因素',
+        'examples': ['市场恐慌', '过度乐观', '羊群效应']
+    },
+    'cognitive': {
+        'name': '认知偏差',
+        'examples': ['过度自信', '确认偏误', '锚定效应']
+    }
 }
 ```
 
-### 3. 资本行为深度观察
+### 复盘记录格式
 
-#### 观察维度
+```sql
+-- review_log 表记录
+INSERT INTO review_log (
+    prediction_id,
+    review_date,
+    actual_close,
+    actual_change_pct,
+    actual_high,
+    actual_low,
+    is_correct,
+    accuracy_score,
+    max_profit_pct,
+    max_loss_pct,
+    deviation_reason,
+    market_condition,
+    lesson_learned,
+    capital_behavior_note
+) VALUES (
+    123,                    -- 关联的预测ID
+    '2026-04-24',
+    16.60,
+    -1.13,
+    16.73,
+    16.48,
+    FALSE,                  -- 预测BUY，实际下跌，错误
+    0.0,
+    0.83,                   -- (16.73-16.60)/16.60
+    -0.72,                  -- (16.48-16.60)/16.60
+    '大盘早盘跳水，券商板块跟跌；个股技术突破但市场系统性风险压制',
+    'SIDEWAY',
+    '技术突破需配合大盘环境，单独技术信号不可靠；下次需确认大盘趋势后再做个股判断',
+    '早盘有资金试图拉升，但被大盘拖累，主力未强力护盘，说明对短期走势也不确定'
+);
 ```
-1. 分时图特征
-   - 开盘走势（高开/低开/平开）
-   - 盘中波动特征
-   - 尾盘动作（拉升/砸盘/平稳）
 
-2. 成交量特征
-   - 放量时段
-   - 缩量时段
-   - 异常放量/缩量
+## 股性理解积累
 
-3. 盘口语言
-   - 大单动向
-   - 挂单特征
-   - 成交明细
+### 股性特征记录
 
-4. 与大盘/板块对比
-   - 强于大盘？
-   - 弱于板块？
-   - 独立走势？
+```sql
+-- stock_character 表记录
+INSERT INTO stock_character (
+    observation_date,
+    character_type,
+    description,
+    evidence,
+    confidence
+) VALUES 
+-- 波动特征
+('2026-04-24', 'volatile', '波动率中等，日内振幅1.5%', '近20日平均振幅1.8%', 4),
+
+-- 资金特征  
+('2026-04-24', 'institutional_favorite', '机构持仓集中，主力控盘明显', '前十大股东持股65%', 4),
+
+-- 消息敏感度
+('2026-04-24', 'news_sensitive', '对重组消息极度敏感', '重组公告后3日涨幅15%', 5),
+
+-- 技术特征
+('2026-04-24', 'momentum', '突破MA20后惯性上涨2-3天', '近5次突破MA20，4次后续2日上涨', 3);
 ```
 
-#### 资本行为记录格式
+### 股性档案更新
+
+每次复盘后更新 `profile.md`：
+
 ```markdown
-## 2026-04-23 资本行为观察
+## 股性特征（持续积累）
 
-### 分时特征
-- 开盘: ...
-- 盘中: ...
-- 尾盘: ...
+### 已观察到的特征
+- [x] **消息敏感型**: 对重组/政策消息反应剧烈，公告后3日平均涨幅12%
+- [x] **机构控盘型**: 前十大股东持股65%，盘中波动相对平稳
+- [x] **技术跟随型**: 突破MA20后惯性上涨2-3天，成功率80%
 
-### 成交量分析
-- 上午 vs 下午: ...
-- 异常时段: ...
+### 操盘风格观察
+- 主力资金风格: 机构控盘，游资偶尔参与
+- 典型走势特征: 早盘决定全天方向，尾盘很少异动
+- 对消息敏感度: **极高**（重组/政策）
+- 板块联动性: 强（跟随券商板块）
 
-### 与大盘对比
-- 相对强弱: ...
-- 独立走势时段: ...
-
-### 主力意图判断
-- 今日行为: 吸筹/洗盘/拉升/出货/观望
-- 可信度: 1-5
-- 依据: ...
-
-### 后续观察要点
-- ...
+### 历史验证记录
+| 日期 | 预测 | 实际 | 结果 | 偏差原因 |
+|------|------|------|------|---------|
+| 2026-04-23 | BUY | +2.1% | ✅ | 重组预期 |
+| 2026-04-24 | BUY | -1.13% | ❌ | 大盘跳水 |
 ```
 
-### 4. 股性理解更新
+## 每日复盘报告模板
 
-#### 股性档案积累
-```
-每只股票长期积累以下理解：
+文件：
+- 日汇总：`reviews/daily/2026-04-24_复盘报告.md`
+- 个股拆分：`data/watchlist/active/{code}/reviews/{code}_2026-04-24_复盘.md`
 
-1. 波动特征
-   - 日常波动率
-   - 极端波动触发条件
-   - 波动与大盘的关系
-
-2. 资金特征
-   - 主力资金风格
-   - 散户参与度
-   - 机构持仓变化
-
-3. 消息敏感度
-   - 对利好的反应程度
-   - 对利空的反应程度
-   - 反应速度
-
-4. 技术特征
-   - 常用支撑/阻力位
-   - 典型形态
-   - 量价关系规律
-
-5. 时间特征
-   - 日内活跃时段
-   - 周内活跃时段
-   - 季节性规律
-```
-
-## 复盘报告生成
-
-### 每日复盘报告
-
-文件位置: `data/reports/YYYY/MM/YYYY-MM-DD_复盘报告.md`
-
-内容结构:
 ```markdown
-# 2026-04-23 每日复盘报告
+# 2026-04-24 每日复盘报告
 
 ## 一、整体表现
-- 预测总数: X
-- 正确数: X (X%)
-- 部分正确: X (X%)
-- 错误数: X (X%)
+- 预测总数: 5
+- 正确: 3 (60%)
+- 部分正确: 1 (20%)
+- 错误: 1 (20%)
+- 整体准确率: 60%
 
 ## 二、个股复盘
 
-### 000001 平安银行
-- 预测: BUY
-- 实际: +1.2%
-- 结果: 部分正确 ⚠️
-- 偏差原因: ...
-- 教训: ...
+### 国泰海通(601211)
+- **昨日预测**: BUY（置信度75%）
+- **今日实际**: -1.13%
+- **结果**: ❌ 错误
+- **偏差原因**: 大盘早盘跳水，券商板块跟跌；个股技术突破但市场系统性风险压制
+- **教训**: 技术突破需配合大盘环境，单独技术信号不可靠
+- **股性更新**: 对大盘敏感度高于预期，需增加大盘过滤条件
 
-### 600519 贵州茅台
-- 预测: HOLD
-- 实际: -0.5%
-- 结果: 正确 ✅
-- 备注: ...
+### 贵州茅台(600519)
+- **昨日预测**: HOLD（置信度80%）
+- **今日实际**: +0.5%
+- **结果**: ✅ 正确
+- **备注**: 防御属性显现，大盘下跌时抗跌
 
-## 三、市场观察
-- 大盘走势: ...
-- 板块轮动: ...
-- 资金流向: ...
+## 三、准确率统计
+
+### 按策略版本
+| 版本 | 预测数 | 正确 | 准确率 |
+|------|--------|------|--------|
+| v1 | 5 | 3 | 60% |
+
+### 按股票
+| 股票 | 预测数 | 正确 | 准确率 |
+|------|--------|------|--------|
+| 601211 | 2 | 1 | 50% |
+| 600519 | 3 | 2 | 67% |
 
 ## 四、今日教训
-1. ...
-2. ...
+1. **技术信号需要大盘确认**：601211 技术突破但大盘跳水，导致失败
+2. **券商板块联动性强**：需同时监控板块指数
+3. **止损执行要坚决**：601211 跌破止损位后应果断离场
 
-## 五、明日关注
-- ...
-```
+## 五、明日策略调整
+1. 增加大盘环境过滤：大盘MA20下方不做个股BUY预测
+2. 券商股增加板块指数验证
+3. 测试 v1.1 prompt（增加大盘过滤条件）
 
-### 每周复盘报告
+## 六、股性理解更新
+- **601211**: 对大盘敏感度高，需增加大盘过滤
+- **600519**: 防御属性确认，大盘下跌时优先配置
 
-文件位置: `data/reports/YYYY/MM/YYYY-MM-DD_周复盘.md`
-
-额外内容:
-- 周准确率统计
-- 策略效果评估
-- 股性理解更新汇总
-- 下周策略调整建议
-
-## 数据库存储
-
-### 复盘记录表 (review_log)
-见 workspace-organization skill 中的数据库 schema
-
-### 关键字段
-- `prediction_id`: 关联预测
-- `is_correct`: 是否正确
-- `deviation_reason`: 偏差原因
-- `lesson_learned`: 教训
-- `capital_behavior_note`: 资本行为观察
-
-## 准确率追踪
-
-### 统计维度
-```
-1. 整体准确率
-   - 总预测数 / 正确数
-   - 按时间趋势
-
-2. 分策略准确率
-   - 不同策略版本对比
-   - 不同 LLM 模型对比
-
-3. 分股票准确率
-   - 每只股票的历史准确率
-   - 识别"容易分析"和"难以分析"的股票
-
-4. 分市场环境准确率
-   - 牛市准确率
-   - 熊市准确率
-   - 震荡市准确率
-```
-
-### 准确率更新
-```python
-def update_accuracy_stats(review_date, strategy_version):
-    """
-    更新准确率统计
-    """
-    # 统计最近 7 天、30 天、90 天
-    for period in [7, 30, 90]:
-        stats = calculate_accuracy(review_date, period, strategy_version)
-        save_to_db(stats)
+---
+**复盘日期**: 2026-04-24
+**策略版本**: v1
+**下次复盘**: 2026-04-25
 ```
 
 ## 持续进化机制
 
 ### Prompt 优化闭环
+
 ```
 复盘发现分析偏差
     │
     ▼
-分析偏差原因
+连续3次同类错误？
     │
-    ▼
-判断是否是 Prompt 问题
-    │
-    ├─ 是 ──▶ 优化 Prompt
+    ├─ 是 ──▶ 分析偏差模式
     │           │
     │           ▼
-    │       创建新版本 v{N+1}
+    │       判断是否是 Prompt 问题
     │           │
-    │           ▼
-    │       A/B 测试对比
+    │           ├─ 是 ──▶ 优化 Prompt
+    │           │           │
+    │           │           ▼
+    │           │       创建新版本 v{N+1}
+    │           │           │
+    │           │           ▼
+    │           │       A/B 测试（新旧版本并行）
+    │           │           │
+    │           │           ▼
+    │           │       效果更好的版本保留
     │           │
-    │           ▼
-    │       效果更好的版本保留
+    │           └─ 否 ──▶ 更新股性理解
     │
-    └─ 否 ──▶ 记录到股性理解
+    └─ 否 ──▶ 记录到股性理解，继续观察
 ```
 
-### 股性理解积累
-```
-每次复盘后:
-1. 更新股票的 capital_behavior 记录
-2. 更新 stock_character 记录
-3. 更新 profile.md 中的股性观察
-4. 积累超过 10 条记录后，生成股性总结
+### 准确率追踪表
+
+```sql
+-- 每周更新准确率统计
+CREATE TABLE IF NOT EXISTS accuracy_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stat_date DATE NOT NULL,
+    strategy_version VARCHAR(10),
+    total_predictions INTEGER,
+    correct_count INTEGER,
+    accuracy_rate DECIMAL(5,4),
+    avg_confidence DECIMAL(5,2),
+    avg_actual_return DECIMAL(10,4)
+);
 ```
 
-## 注意事项
+## 禁止事项
 
-1. **及时性**: 必须当日复盘，隔日记忆会衰减
-2. **诚实性**: 错误要诚实记录，不能找借口
-3. **具体性**: 偏差原因要具体，不能笼统
-4. **行动性**: 每次复盘必须有改进建议
-5. **长期性**: 股性理解需要长期积累，不能急于求成
+- ❌ 不复盘直接做新预测
+- ❌ 错了不记录原因
+- ❌ 不更新股性理解
+- ❌ 连续错误不调整策略
+- ❌ 把错误归咎于"市场不可预测"
+
+## 检查清单
+
+每日复盘后检查：
+- [ ] 所有昨日预测已验证
+- [ ] 偏差原因已记录到 review_log
+- [ ] 股性理解已更新到 stock_character
+- [ ] 股票档案 profile.md 已更新
+- [ ] 复盘报告已生成
+- [ ] 准确率统计已更新
+- [ ] 连续错误已分析是否需要优化 prompt

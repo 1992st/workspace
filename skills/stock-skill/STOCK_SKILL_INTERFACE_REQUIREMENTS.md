@@ -260,6 +260,97 @@
 ### 分析价值
 - 判断热点持续性与轮动速度，辅助仓位轮换策略。
 
+## 6.9 `etf.pcf.get`（ETF 申购赎回清单 / PCF）
+
+### 必需数据
+- `fund_code`
+- `date`
+- `pcf_items[]`
+- `publish_time`
+- `availability`
+
+### 高阶数据
+- `cash_component`
+- `session_constraint`
+- `is_pcf_not_real_flow`
+
+### 分析价值
+- 用于验证板块 ETF 是否存在被动资金/套利盘关注。
+- 这是盘前可得的清单信息，不得误当成盘中实时净申赎结果。
+
+## 6.10 `margin.balance.get`（融资融券余额变化）
+
+### 必需数据
+- `symbol`
+- `as_of_date`
+- `financing_balance`
+- `financing_buy`
+- `financing_repay`
+- `balance_change`
+- `availability`
+
+### 高阶数据
+- `securities_lending_balance`
+- `is_latest_trading_day`
+- `session_constraint`
+
+### 分析价值
+- 看杠杆资金是否追涨、去杠杆是否加速。
+- 盘中通常只能使用上一交易日正式值，不能假装拿到实时两融。
+
+## 6.11 `hsgt.top10.get`（沪股通十大活跃股）
+
+### 必需数据
+- `date`
+- `channel`
+- `items[]`
+- `availability`
+
+### 高阶数据
+- `net_buy`
+- `buy_amount`
+- `sell_amount`
+- `turnover`
+
+### 分析价值
+- 用于确认外资是否认可当前主线或目标股所属板块。
+- 仅作为盘后确认数据，不作为盘中实时硬证据。
+
+## 6.12 `lhb.detail.get`（龙虎榜）
+
+### 必需数据
+- `symbol`
+- `date`
+- `eligible`
+- `reason`
+- `items[]`
+- `availability`
+
+### 高阶数据
+- `institution_summary`
+- `northbound_seat_present`
+
+### 分析价值
+- 区分机构席位、北向席位、游资席位主导的筹码结构。
+- 只有在满足交易公开信息条件时才有意义；未上榜不是异常。
+
+## 6.13 `block_trade.get`（大宗交易）
+
+### 必需数据
+- `symbol`
+- `date`
+- `items[]`
+- `total_amount`
+- `avg_discount_rate`
+- `availability`
+
+### 高阶数据
+- `buyer_seller_pairs`
+
+### 分析价值
+- 识别减持压力、机构承接和折价风险。
+- 单笔或单日大宗交易不能脱离折价率、对手方和后续二级市场承接单独解读。
+
 ## 7. 免费数据源要求
 - 每类接口至少定义主源和备源。
 - 主源不可用时必须自动降级。

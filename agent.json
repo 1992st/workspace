@@ -1,0 +1,165 @@
+{
+  "name": "win_stock",
+  "version": "1.0",
+  "description": "Win_Stock 股票投资分析 Agent",
+  "workspace": "/Volumes/zhangstExtern/openclaw/workspace/win_stock",
+  "model": "kimi-code",
+  "modelProvider": "kimi",
+  "skills": [
+    "workspace-organization",
+    "stock-data",
+    "stock-analysis",
+    "daily-review",
+    "news-analysis",
+    "feishu-notify"
+  ],
+  "watchlist": [
+    {
+      "code": "002008",
+      "name": "大族激光",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "600549",
+      "name": "厦门钨业",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "002241",
+      "name": "歌尔股份",
+      "industry": "消费电子",
+      "holding": true,
+      "reason": "持仓已降低至10%,风险可控.\n苹果产业链,AR MR.需要根据大盘信息和市场动态结合分析\n目标仓位:10%"
+    },
+    {
+      "code": "600118",
+      "name": "中国卫星",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "600031",
+      "name": "三一重工",
+      "industry": "未知",
+      "holding": false,
+      "reason": ""
+    },
+    {
+      "code": "001309",
+      "name": "德明利",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "603063",
+      "name": "禾望电气",
+      "industry": "未知",
+      "holding": false,
+      "reason": ""
+    },
+    {
+      "code": "603986",
+      "name": "兆易创新",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "302132",
+      "name": "中航成飞",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "601211",
+      "name": "国泰海通",
+      "industry": "证券",
+      "holding": true,
+      "reason": "券商龙头，市场行情风向标\n关注市场成交量和指数走势\n目标仓位:20%"
+    },
+    {
+      "code": "002414",
+      "name": "高德红外",
+      "industry": "国防军工",
+      "holding": true,
+      "reason": "红外热成像技术龙头\n关注军工订单和业绩表现\n持仓较轻，可适当关注"
+    },
+    {
+      "code": "002815",
+      "name": "茶花股份",
+      "industry": "未知",
+      "holding": false,
+      "reason": ""
+    },
+    {
+      "code": "600104",
+      "name": "上汽集团",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "603218",
+      "name": "日月股份",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "600458",
+      "name": "时代新材",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "000822",
+      "name": "山东海化",
+      "industry": "未知",
+      "holding": true,
+      "reason": ""
+    },
+    {
+      "code": "000737",
+      "name": "北方铜业",
+      "industry": "未知",
+      "holding": false,
+      "reason": ""
+    }
+  ],
+  "cronJobs": [
+    {
+      "name": "stock-realtime-monitor",
+      "schedule": "*/30 9-15 * * 1-5",
+      "description": "盘中每30分钟监控自选股行情"
+    },
+    {
+      "name": "daily-aftermarket-review",
+      "schedule": "30 16 * * 1-5",
+      "description": "收盘后每日复盘"
+    },
+    {
+      "name": "evening-news-analysis",
+      "schedule": "0 20 * * 1-5",
+      "description": "晚间新闻分析"
+    }
+  ],
+  "dataSources": [
+    "akshare",
+    "easyquotation",
+    "tushare"
+  ],
+  "createdAt": "2026-04-24",
+  "updatedAt": "2026-04-24",
+  "feishu": {
+    "chat_id": "oc_f403ab69c2c499a1aaa16066241842fb",
+    "config_path": "config/feishu.json"
+  }
+}
