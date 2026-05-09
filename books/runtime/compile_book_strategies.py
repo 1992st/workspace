@@ -94,8 +94,7 @@ def compile_strategies(root: Path, target_version: str) -> Dict[str, object]:
 
     compiled_at = dt.date.today().isoformat()
     return {
-        "strategy_version": target_version,
-        "prompt_version": target_version,
+        "bundle_version": target_version,
         "compiled_at": compiled_at,
         "scene": "stock_analysis",
         "source_books": source_books,
@@ -136,7 +135,7 @@ def build_base_prompt(target_version: str, strategies: List[Dict[str, object]]) 
     lines = [
         "# Book Strategy Base",
         f"",
-        f"- strategy_version: {target_version}",
+        f"- bundle_version: {target_version}",
         "- scene: stock_analysis",
         "- rule: always apply these global book strategies before generating a trade recommendation",
         "",
@@ -162,18 +161,16 @@ def build_changelog(
         f"- 初次引入 book 策略编译产物。\n"
         f"- 全量注入策略 {len(globals_)} 条。\n"
         f"- 条件注入策略 {len(conditionals)} 条。\n"
-        f"- 运行时由 `analysis.stock.prepare` 记录注入策略 ID、选择原因和策略版本。\n"
+        f"- 运行时由 `analysis.stock.prepare` 记录注入策略 ID、选择原因和策略包版本。\n"
     )
 
 
 def write_outputs(root: Path, target_version: str, compiled: Dict[str, object]) -> None:
-    version_dir = root / "prompts" / target_version / "compiled"
     active_dir = root / "prompts" / "current" / "compiled"
     payloads = {
         "strategy_manifest.json": json.dumps(
             {
-                "strategy_version": compiled["strategy_version"],
-                "prompt_version": compiled["prompt_version"],
+                "bundle_version": compiled["bundle_version"],
                 "compiled_at": compiled["compiled_at"],
                 "scene": compiled["scene"],
                 "source_books": compiled["source_books"],
@@ -190,10 +187,9 @@ def write_outputs(root: Path, target_version: str, compiled: Dict[str, object]) 
         "stock_strategy_base.md": str(compiled["base_prompt"]),
         "CHANGELOG.md": str(compiled["changelog"]),
     }
-    for compiled_dir in (version_dir, active_dir):
-        compiled_dir.mkdir(parents=True, exist_ok=True)
-        for filename, content in payloads.items():
-            (compiled_dir / filename).write_text(content, encoding="utf-8")
+    active_dir.mkdir(parents=True, exist_ok=True)
+    for filename, content in payloads.items():
+        (active_dir / filename).write_text(content, encoding="utf-8")
 
 
 def main() -> None:

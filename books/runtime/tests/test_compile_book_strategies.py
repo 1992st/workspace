@@ -77,7 +77,7 @@ class CompileBookStrategiesTests(unittest.TestCase):
         self.assertEqual(registries[0]["book_id"], "legacy_book")
         self.assertTrue(registries[0]["_registry_path"].endswith("strategy_registry.json"))
 
-    def test_write_outputs_syncs_version_and_current_compiled_dirs(self) -> None:
+    def test_write_outputs_writes_current_compiled_dir_only(self) -> None:
         temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
         root = Path(temp_dir.name)
@@ -91,14 +91,11 @@ class CompileBookStrategiesTests(unittest.TestCase):
         compiled = compile_strategies(root, "v9")
         write_outputs(root, "v9", compiled)
 
-        version_manifest = root / "prompts" / "v9" / "compiled" / "strategy_manifest.json"
         current_manifest = root / "prompts" / "current" / "compiled" / "strategy_manifest.json"
-        self.assertTrue(version_manifest.exists())
         self.assertTrue(current_manifest.exists())
-        self.assertEqual(
-            json.loads(version_manifest.read_text(encoding="utf-8")),
-            json.loads(current_manifest.read_text(encoding="utf-8")),
-        )
+        manifest = json.loads(current_manifest.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["bundle_version"], "v9")
+        self.assertEqual(manifest["scene"], "stock_analysis")
 
 
 if __name__ == "__main__":

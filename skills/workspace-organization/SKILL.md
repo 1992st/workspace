@@ -35,9 +35,8 @@ win_stock/
 │   └── daily-review/      # 每日复盘
 │
 ├── prompts/              # 策略 Prompts（独立维护）
-│   ├── current/           # 当前使用版本（软链接到最新版本）
-│   ├── v1/, v2/...       # 历史版本
-│   └── archive/           # 废弃版本
+│   ├── current/           # 当前唯一正式生效版本
+│   └── archive/           # 如需保留历史再归档
 │
 ├── data/                 # 数据目录
 │   ├── watchlist/         # 自选股数据根目录
@@ -85,6 +84,12 @@ win_stock/
 - `stock_analysis.md` - 个股分析
 - `news_analysis.md` - 新闻分析
 - `review_analysis.md` - 复盘分析
+- `book_method_extraction.md` - 书籍提炼与方法沉淀
+
+### 书籍/方法沉淀文件
+- 阅读提炼主文档：放在 `books/` 下可发现位置
+- 方法总结文档：放在 `books/` 或 `prompts/` 下可复用位置
+- 只有成熟度足够高的方法，才进入 `books/{book_id}/strategy/registry.json`
 
 ## 关键操作规范
 
@@ -127,18 +132,9 @@ mv data/watchlist/active/{code} data/watchlist/archived/{code}_removed_YYYY-MM-D
 ### 4. Prompt 版本升级
 
 ```bash
-# 1. 创建新版本目录
-mkdir prompts/v{N}
-
-# 2. 复制并修改 prompts
-cp prompts/current/*.md prompts/v{N}/
-# 编辑优化...
-
-# 3. 更新软链接
-ln -sf v{N} prompts/current
-
-# 4. 记录变更
-# 在 prompts/v{N}/CHANGELOG.md 记录修改内容
+# 1. 直接修改 prompts/current/ 中对应文件
+# 2. 如需保留历史，再复制到 prompts/archive/
+# 3. 在 docs/changelog.md 记录修改内容
 ```
 
 ### 5. 定期清理
@@ -154,9 +150,11 @@ ln -sf v{N} prompts/current
 
 - 不要把不同股票的数据混存在一个文件/表中
 - 不要把分析结果散落在根目录或临时目录
-- 不要直接修改 prompts/current/ 中的文件，应该创建新版本
+- 不要在多个 prompts 版本目录里并行维护同一份生效规则
 - 不要把日志文件和分析报告混在一起
 - 不要保留超过 90 天的临时文件
+- 不要把“书籍阅读笔记”直接当作“运行时规则已接入”
+- 不要强迫所有书籍任务都建立机械一致的目录树，除非需要长期维护
 
 ## 检查清单
 

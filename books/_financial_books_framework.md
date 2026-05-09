@@ -421,8 +421,8 @@ I. 护城河与竞争优势 (R061-R070) — 来自《股市真规则》
    │
    ▼
 5. 合并到投资规则
-   - 创建新版本 v3 (包含R041-R070)
-   - 更新软链接 current -> v3
+   - 直接更新 prompts/current/investment_rules.md
+   - 如需保留历史，再放入 prompts/archive/
    │
    ▼
 6. 更新分析Prompt

@@ -1,7 +1,6 @@
 {
-  "strategy_version": "v2",
-  "prompt_version": "v2",
-  "compiled_at": "2026-04-27",
+  "bundle_version": "current",
+  "compiled_at": "2026-05-09",
   "scene": "stock_analysis",
   "source_books": [
     {

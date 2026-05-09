@@ -347,13 +347,7 @@ JSON 格式，包含：
 
 ```
 prompts/
-├── v1.0/                    # 初始版本
-│   ├── market_prompt.txt
-│   ├── sector_prompt.txt
-│   └── stock_prompt.txt
-├── v1.1/                    # 优化版本
-│   └── ...
-└── current -> v1.1/         # 当前使用版本（软链接）
+└── current/                 # 当前唯一正式生效版本
 ```
 
 ## 5. Prompt 效果评估

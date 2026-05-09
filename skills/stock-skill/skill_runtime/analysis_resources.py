@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Dict, List
 
@@ -86,8 +85,7 @@ class AnalysisResourceLoader:
         compiled_dir, activation_source = self._resolve_strategy_artifact_dir()
         if compiled_dir is None:
             return {
-                "prompt_version": None,
-                "strategy_version": None,
+                "bundle_version": None,
                 "compiled_at": None,
                 "activation_source": "unavailable",
                 "base_prompt": "",
@@ -106,8 +104,7 @@ class AnalysisResourceLoader:
         conditional_profiles = json.loads(conditional_path.read_text(encoding="utf-8"))
         base_prompt = base_prompt_path.read_text(encoding="utf-8").strip()
         return {
-            "prompt_version": manifest["prompt_version"],
-            "strategy_version": manifest["strategy_version"],
+            "bundle_version": manifest["bundle_version"],
             "compiled_at": manifest["compiled_at"],
             "activation_source": activation_source,
             "scene": manifest["scene"],
@@ -122,25 +119,4 @@ class AnalysisResourceLoader:
         manifest = self.active_strategy_dir / "strategy_manifest.json"
         if manifest.exists():
             return self.active_strategy_dir, "current"
-
-        latest_version = self._resolve_latest_strategy_version()
-        if latest_version is None:
-            return None, "unavailable"
-        return self.strategy_prompt_root / latest_version / "compiled", f"latest_fallback:{latest_version}"
-
-    def _resolve_latest_strategy_version(self) -> str | None:
-        candidates = []
-        for path in self.strategy_prompt_root.glob("v*"):
-            if not path.is_dir():
-                continue
-            match = re.fullmatch(r"v(\d+)", path.name)
-            if not match:
-                continue
-            manifest = path / "compiled" / "strategy_manifest.json"
-            if not manifest.exists():
-                continue
-            candidates.append((int(match.group(1)), path.name))
-        if not candidates:
-            return None
-        candidates.sort()
-        return candidates[-1][1]
+        return None, "unavailable"

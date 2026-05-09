@@ -25,6 +25,12 @@ data/reports/
 reviews/daily/
 reviews/weekly/
 
+# Runtime caches and snapshots
+data/cache/
+data/market/cache/
+memory/
+*.bak
+
 # Active watchlist generated artifacts
 data/watchlist/active/*/analysis/
 data/watchlist/active/*/predictions/
@@ -39,6 +45,8 @@ data/watchlist/active/*/*_公告原文.pdf
 watchlist/*/analysis/
 watchlist/*/history/
 watchlist/*/special/
+watchlist/
+DREAMS.md
 
 # Skill runtime outputs
 skills/stock-skill/runtime_data/
@@ -47,3 +55,11 @@ skills/stock-skill/runtime_data/
 books/runtime/__pycache__/
 books/runtime/tests/__pycache__/
 books/reminiscences_2005/
+
+# External reference mirrors
+references/news-search/Google-Dorks-Resources/
+references/news-search/awesome-hacker-search-engines/
+references/news-search/awesome-osint/
+references/news-search/awesome-osint.md
+references/news-search/awesome-search-engines.md
+references/news-search/google-dorks.md

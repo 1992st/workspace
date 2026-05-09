@@ -17,10 +17,10 @@ Win_Stock
 - 独立 SQLite 数据库 `{code}_db.sqlite`
 - 独立分析历史、预测记录、复盘记录
 
-### Prompt 版本化
-- 所有策略 prompts 放在 `prompts/v{N}/`
-- `prompts/current/` 为软链接，指向当前版本
-- 升级时创建新版本，切换软链接，保留历史
+### Prompt 生效规则
+- 所有正式运行 prompts 放在 `prompts/current/`
+- `current/` 是唯一正式生效入口
+- 如需保留历史或做对比，使用 `prompts/archive/` 或 `prompts/experiments/`
 
 ### 每日进化
 - 收盘后自动生成复盘报告

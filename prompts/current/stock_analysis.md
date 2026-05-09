@@ -106,6 +106,17 @@
 - 适合持仓周期
 - 仓位建议
 
+### 7. 运行时必需区块
+- 必须输出 `market_regime`
+- 必须输出 `sector_positioning`
+- 必须输出 `expectation_analysis`
+- 必须输出 `capital_confirmation`
+- 必须输出 `scenario_plan`
+- 必须输出 `trigger_and_invalidation`
+- 必须输出 `source_reliability`
+- 必须输出 `rumor_check`
+- 这些区块用于运行时校验、复盘归档和证据链检查，不能省略
+
 ## 输出格式（JSON）
 
 ```json
@@ -147,6 +158,56 @@
     "evidence": "...",
     "chip_status": "集中|分散|锁定"
   },
+  "market_regime": {
+    "current_market_expectation": "...",
+    "phase": "bullish|bearish|sideways|uncertain",
+    "risk_appetite": "high|medium|low|panic",
+    "evidence": ["..."]
+  },
+  "sector_positioning": {
+    "sector_role": "主线|支线|补涨|退潮|防御",
+    "leader_status": "已确认|未确认|分歧中",
+    "fund_flow_status": "持续流入|分歧|流出",
+    "notes": "..."
+  },
+  "expectation_analysis": {
+    "market_is_trading": "...",
+    "stock_role_in_expectation": "...",
+    "priced_in_status": "已反映|部分反映|未反映",
+    "supporting_evidence": [
+      {
+        "category": "market|sector|capital",
+        "detail": "..."
+      }
+    ],
+    "strongest_counter_evidence": ["..."]
+  },
+  "capital_confirmation": {
+    "verdict": "confirmed|mixed|missing|rejected",
+    "signals": ["..."],
+    "notes": "..."
+  },
+  "scenario_plan": {
+    "bull_case": "...",
+    "base_case": "...",
+    "bear_case": "..."
+  },
+  "trigger_and_invalidation": {
+    "entry_triggers": ["..."],
+    "hold_triggers": ["..."],
+    "invalidation_signals": ["..."],
+    "exit_triggers": ["..."]
+  },
+  "source_reliability": {
+    "primary_sources": ["公告|交易所|公司披露|权威媒体"],
+    "tradeable_signal_threshold": "...",
+    "notes": "..."
+  },
+  "rumor_check": {
+    "status": "unverified|official_confirmed|multi_source_confirmed|false_or_misleading",
+    "key_rumors": ["..."],
+    "final_verdict": "unverified|official_confirmed|multi_source_confirmed|false_or_misleading"
+  },
   "recommendation": {
     "action": "BUY|SELL|HOLD|WATCH",
     "confidence": 75,
@@ -171,12 +232,12 @@
     "reasoning": "..."
   },
   "strategy_usage": {
-    "strategy_version": "v2",
-    "injected_strategy_ids": ["REM-R001", "REM-R003"],
-    "cited_strategy_ids": ["REM-R001", "REM-R003"],
+    "bundle_version": "<runtime_bundle_version>",
+    "injected_strategy_ids": ["<runtime_injected_strategy_id>"],
+    "cited_strategy_ids": ["<actually_cited_injected_strategy_id>"],
     "violated_strategy_ids": [],
-    "selection_reason": ["profile=buy_watch -> tags=buy_decision,trend_following,timing"],
-    "strategy_notes": "本次结论主要受顺势、证据链和风险控制策略约束。"
+    "selection_reason": ["<runtime_selection_reason>"],
+    "strategy_notes": "说明本次结论主要受哪些已注入策略约束，以及是否存在违反策略的地方。"
   },
   "reasoning": {
     "primary_factors": ["看多/看空的主要因素"],
@@ -205,7 +266,6 @@
 - **结论必须明确：禁止模棱两可，必须给出具体操作+置信度+目标价+止损价+仓位+时间周期**
 - **分析结果必须保存：不保存的分析等于没做**
 - **必须附带做T指导：正T/反T/不做，具体价位+仓位+条件+触发条件+止损条件**
-- **必须引用投资规则：分析结论中必须引用相关规则编号（R001-R020）**
-- **规则合规检查：明确标注哪些规则符合、哪些违反、为什么违反**
-- **必须输出 expectation_analysis / capital_confirmation / scenario_plan / trigger_and_invalidation / rumor_check / source_reliability**
+- **必须引用稳定纪律与本次实际注入策略：稳定纪律可引用投资规则编号，本次运行策略必须引用实际 injected strategy IDs**
+- **规则合规检查：明确标注哪些已注入策略符合、哪些违反、为什么违反**
 - **高置信度 BUY/SELL 必须同时引用市场、板块、资金三类证据**

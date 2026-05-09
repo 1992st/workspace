@@ -1,6 +1,6 @@
 # Book Strategy Base
 
-- strategy_version: v2
+- bundle_version: current
 - scene: stock_analysis
 - rule: always apply these global book strategies before generating a trade recommendation
 

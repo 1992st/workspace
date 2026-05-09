@@ -23,7 +23,7 @@ def validate_analysis_result(
         strategy_usage = {}
 
     required_strategy_fields = [
-        "strategy_version",
+        "bundle_version",
         "injected_strategy_ids",
         "cited_strategy_ids",
         "violated_strategy_ids",
@@ -56,9 +56,9 @@ def validate_analysis_result(
             f"strategy_usage.violated_strategy_ids contains non-injected strategies: {invalid_violations}"
         )
 
-    expected_strategy_version = prompt_bundle.get("strategy_version")
-    if strategy_usage.get("strategy_version") != expected_strategy_version:
-        errors.append("strategy_usage.strategy_version must match prompt_bundle.strategy_version")
+    expected_bundle_version = prompt_bundle.get("bundle_version")
+    if strategy_usage.get("bundle_version") != expected_bundle_version:
+        errors.append("strategy_usage.bundle_version must match prompt_bundle.bundle_version")
 
     recommendation = analysis_result.get("recommendation", {})
     if not isinstance(recommendation, dict):
@@ -140,7 +140,7 @@ def validate_analysis_result(
         "errors": errors,
         "warnings": warnings,
         "storage_payload": {
-            "strategy_version": expected_strategy_version,
+            "bundle_version": expected_bundle_version,
             "injected_strategy_ids": expected_injected,
             "strategy_citations": cited_ids,
             "violated_strategy_ids": violated_ids,

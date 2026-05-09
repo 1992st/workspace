@@ -311,7 +311,7 @@ INSERT INTO stock_character (
 ## 五、明日策略调整
 1. 增加大盘环境过滤：大盘MA20下方不做个股BUY预测
 2. 券商股增加板块指数验证
-3. 测试 v1.1 prompt（增加大盘过滤条件）
+3. 直接优化 `prompts/current/` 中相关分析 Prompt；如需对比，放入 `prompts/experiments/`
 
 ## 六、股性理解更新
 - **601211**: 对大盘敏感度高，需增加大盘过滤
@@ -319,7 +319,7 @@ INSERT INTO stock_character (
 
 ---
 **复盘日期**: 2026-04-24
-**策略版本**: v1
+**策略包版本**: current
 **下次复盘**: 2026-04-25
 ```
 
@@ -341,10 +341,10 @@ INSERT INTO stock_character (
     │           ├─ 是 ──▶ 优化 Prompt
     │           │           │
     │           │           ▼
-    │           │       创建新版本 v{N+1}
+    │           │       直接更新 `prompts/current/`
     │           │           │
     │           │           ▼
-    │           │       A/B 测试（新旧版本并行）
+    │           │       A/B 测试（current vs experiments）
     │           │           │
     │           │           ▼
     │           │       效果更好的版本保留

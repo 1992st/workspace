@@ -187,6 +187,22 @@ class StockDataClientTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("K线数据当前未实现 browser 降级", result["errors"])
 
+    def test_get_analysis_payload_dispatches_to_fast_data(self):
+        client = self.make_client()
+        calls = []
+        client._run_fast = lambda *args, **kwargs: calls.append(args) or {"success": True, "data": {"symbol": "601211"}}
+        result = client.get_analysis_payload("601211")
+        self.assertTrue(result["success"])
+        self.assertEqual(calls[0], ("analysis", "601211"))
+
+    def test_get_kline_period_dispatches_to_extended_fast_command(self):
+        client = self.make_client()
+        calls = []
+        client._run_fast = lambda *args, **kwargs: calls.append(args) or {"success": True, "data": {"period": "weekly"}}
+        result = client.get_kline_period("601211", "weekly", 104)
+        self.assertTrue(result["success"])
+        self.assertEqual(calls[0], ("klinex", "601211", "weekly", "104"))
+
 
 class BrowserFetchTests(unittest.TestCase):
     def test_parse_tencent_quote_maps_expected_fields(self):

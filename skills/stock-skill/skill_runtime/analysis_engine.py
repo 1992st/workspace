@@ -128,7 +128,7 @@ def build_stock_analysis_context(
         "analysis_mode": "data_driven_prompt_guided_with_book_strategies",
         "prompt_bundle": {
             "version": resource_bundle["version"],
-            "strategy_version": strategy_bundle["strategy_version"],
+            "bundle_version": strategy_bundle["bundle_version"],
             "activation_source": strategy_bundle["activation_source"],
             "compiled_prompt": compiled_prompt,
             "modules": [
@@ -154,7 +154,7 @@ def build_stock_analysis_context(
                     "strategy_usage",
                 ],
                 "required_strategy_usage_fields": [
-                    "strategy_version",
+                    "bundle_version",
                     "injected_strategy_ids",
                     "cited_strategy_ids",
                     "violated_strategy_ids",
@@ -638,8 +638,7 @@ def _build_strategy_bundle(
     injected = global_strategies + selected_conditional
     injected_ids = [item["strategy_id"] for item in injected]
     return {
-        "prompt_version": artifacts.get("prompt_version"),
-        "strategy_version": artifacts.get("strategy_version"),
+        "bundle_version": artifacts.get("bundle_version"),
         "compiled_at": artifacts.get("compiled_at"),
         "activation_source": artifacts.get("activation_source", "unavailable"),
         "manifest_path": artifacts.get("manifest_path"),
@@ -663,7 +662,7 @@ def _build_strategy_bundle(
             base_prompt=artifacts.get("base_prompt", ""),
             selected_conditional=selected_conditional,
             strategy_context=strategy_context,
-            strategy_version=artifacts.get("strategy_version"),
+            bundle_version=artifacts.get("bundle_version"),
         ),
     }
 
@@ -724,7 +723,7 @@ def _compile_strategy_prompt(
     base_prompt: str,
     selected_conditional: List[Dict[str, Any]],
     strategy_context: Dict[str, Any],
-    strategy_version: str | None,
+    bundle_version: str | None,
 ) -> str:
     lines = []
     if base_prompt:
@@ -733,7 +732,7 @@ def _compile_strategy_prompt(
         [
             "",
             "# Conditional Strategy Injection",
-            f"- strategy_version: {strategy_version or 'unknown'}",
+            f"- bundle_version: {bundle_version or 'unknown'}",
             f"- action_intent: {strategy_context['action_intent']}",
             f"- market_bias: {strategy_context['market_bias']}",
             f"- trend_state: {strategy_context['trend_state']}",
@@ -752,7 +751,7 @@ def _compile_strategy_prompt(
         [
             "",
             "# Strategy Response Contract",
-            "- output must include strategy_usage.strategy_version",
+            "- output must include strategy_usage.bundle_version",
             "- output must include strategy_usage.injected_strategy_ids using this run's injected strategy ids",
             "- output must include strategy_usage.cited_strategy_ids with only injected strategy ids",
             "- output must include strategy_usage.violated_strategy_ids with only injected strategy ids",

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import time
+import subprocess
+import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -58,6 +60,7 @@ class StockSkill(BaseSkill):
         skill_root = Path(__file__).resolve().parents[1]
         self.root = root
         self.skill_root = skill_root
+        self.stock_data_script = root / "skills" / "stock-data" / "scripts" / "stock_client.py"
         self.cache = cache or FileCache(root / "data" / "market" / "cache")
         self.health = health or HealthTracker()
         self.failure_recorder = failure_recorder or ToolFailureRecorder(
@@ -240,35 +243,8 @@ class StockSkill(BaseSkill):
                 "symbol is required for analysis.stock.prepare",
                 retryable=False,
             )
-        sector_map_response = self._sector_map_get(payload)
-        primary_sector = (
-            sector_map_response.get("data", {}).get("primary_sector")
-            if sector_map_response.get("status") in {"ok", "degraded"}
-            else ""
-        )
-        sector_heat_response = (
-            self._sector_heat_get({"sector": primary_sector})
-            if primary_sector
-            else build_error_response(
-                "missing_sector_for_sector_heat",
-                "sector heat unavailable because primary sector could not be resolved",
-                retryable=False,
-            )
-        )
-        responses = {
-            "quote.get": self._quote_get(payload),
-            "kline.get": self._kline_get({**payload, "timeframe": payload.get("timeframe", "1d"), "limit": payload.get("kline_limit", 60)}),
-            "index.get": self._index_get({"index_code": payload.get("index_code", "sh000001")}),
-            "market.snapshot.get": self._market_snapshot_get({"limit": payload.get("market_limit", 50)}),
-            "sector.map.get": sector_map_response,
-            "sector.heat.get": sector_heat_response,
-            "news.market.get": self._news_market_get({"limit": payload.get("market_news_limit", 10)}),
-            "news.stock.get": self._news_stock_get({**payload, "limit": payload.get("news_limit", 10)}),
-            "flow.main.get": self._flow_main_get(payload),
-            "flow.order_size.get": self._flow_order_size_get(payload),
-            "fundamental.valuation.get": self._fundamental_valuation_get(payload),
-            "fundamental.metrics.get": self._fundamental_metrics_get(payload),
-        }
+        analysis_payload_result = self._load_analysis_payload(symbol)
+        responses = self._build_responses_from_analysis_payload(payload, analysis_payload_result)
         bundle = self.resource_loader.load_stock_analysis_bundle()
         analysis_context = build_stock_analysis_context(
             symbol=symbol,
@@ -294,6 +270,181 @@ class StockSkill(BaseSkill):
             issues=issues,
             failed_sources=failed_actions,
         )
+
+    def _load_analysis_payload(self, symbol: str) -> Dict[str, Any]:
+        cmd = ["python3", str(self.stock_data_script), "analysis", symbol]
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=90,
+                cwd=str(self.root),
+            )
+            output = result.stdout.strip() or result.stderr.strip()
+            if not output:
+                return {"success": False, "error": "stock-data analysis payload empty output"}
+            return json.loads(output)
+        except Exception as exc:
+            return {"success": False, "error": f"stock-data analysis payload failed: {exc}"}
+
+    def _build_responses_from_analysis_payload(
+        self,
+        payload: Dict[str, Any],
+        analysis_payload_result: Dict[str, Any],
+    ) -> Dict[str, Dict[str, Any]]:
+        if not analysis_payload_result.get("success"):
+            fallback_sector = self._sector_map_get(payload)
+            primary_sector = (
+                fallback_sector.get("data", {}).get("primary_sector")
+                if fallback_sector.get("status") in {"ok", "degraded"}
+                else ""
+            )
+            fallback_sector_heat = (
+                self._sector_heat_get({"sector": primary_sector})
+                if primary_sector
+                else build_error_response(
+                    "missing_sector_for_sector_heat",
+                    "sector heat unavailable because primary sector could not be resolved",
+                    retryable=False,
+                )
+            )
+            return {
+                "quote.get": self._quote_get(payload),
+                "kline.get": self._kline_get({**payload, "timeframe": payload.get("timeframe", "1d"), "limit": payload.get("kline_limit", 60)}),
+                "index.get": self._index_get({"index_code": payload.get("index_code", "sh000001")}),
+                "market.snapshot.get": self._market_snapshot_get({"limit": payload.get("market_limit", 50)}),
+                "sector.map.get": fallback_sector,
+                "sector.heat.get": fallback_sector_heat,
+                "news.market.get": self._news_market_get({"limit": payload.get("market_news_limit", 10)}),
+                "news.stock.get": self._news_stock_get({**payload, "limit": payload.get("news_limit", 10)}),
+                "flow.main.get": self._flow_main_get(payload),
+                "flow.order_size.get": self._flow_order_size_get(payload),
+                "fundamental.valuation.get": self._fundamental_valuation_get(payload),
+                "fundamental.metrics.get": self._fundamental_metrics_get(payload),
+            }
+
+        aggregated = analysis_payload_result.get("data", {}) or {}
+        sector_data = aggregated.get("sector") or {}
+        primary_sector = sector_data.get("industry", "")
+        sector_map_data = {
+            "symbol": aggregated.get("symbol"),
+            "sectors": [primary_sector] if primary_sector else [],
+            "primary_sector": primary_sector,
+            "concept_tags": [],
+        }
+        market_data = aggregated.get("market") or {}
+        first_index = (market_data.get("indices") or [{}])[0]
+        quote_data = aggregated.get("quote") or {}
+        flow_data = aggregated.get("fund_flow") or {}
+        valuation_data = aggregated.get("fundamental_valuation") or {}
+        fundamentals_data = (aggregated.get("fundamental_trend") or {}).get("latest") or {}
+        daily_data = aggregated.get("kline_daily") or {}
+        sector_heat_data = {
+            "sector": primary_sector,
+            "change_pct": None,
+            "leader_symbols": [aggregated.get("symbol")] if aggregated.get("symbol") else [],
+            "sector_fund_flow": None,
+            "continuity_score": None,
+        }
+        quality_sections = ((aggregated.get("quality") or {}).get("sections") or {})
+
+        return {
+            "quote.get": self._success_from_aggregated("stock-data", quote_data, quality_sections.get("quote")),
+            "kline.get": self._success_from_aggregated("stock-data", daily_data, quality_sections.get("kline_daily")),
+            "index.get": self._success_from_aggregated(
+                "stock-data",
+                {
+                    "index_code": payload.get("index_code", "sh000001"),
+                    "index_name": first_index.get("name"),
+                    "price": first_index.get("price"),
+                    "change_pct": first_index.get("change_pct"),
+                    "timestamp": market_data.get("timestamp"),
+                    "volume": first_index.get("volume"),
+                    "amount": None,
+                },
+                quality_sections.get("market"),
+            ),
+            "market.snapshot.get": self._success_from_aggregated(
+                "stock-data",
+                {
+                    "timestamp": market_data.get("timestamp"),
+                    "market_change_pct": first_index.get("change_pct"),
+                    "total_amount": None,
+                    "advancers": None,
+                    "decliners": None,
+                    "flat_count": None,
+                    "limit_up_count": None,
+                    "limit_down_count": None,
+                    "top_sector_list": [],
+                },
+                quality_sections.get("market"),
+            ),
+            "sector.map.get": self._success_from_aggregated("stock-data", sector_map_data, quality_sections.get("sector")),
+            "sector.heat.get": self._success_from_aggregated("stock-data", sector_heat_data, quality_sections.get("sector")),
+            "news.market.get": self._news_market_get({"limit": payload.get("market_news_limit", 10)}),
+            "news.stock.get": self._news_stock_get({**payload, "limit": payload.get("news_limit", 10)}),
+            "flow.main.get": self._success_from_aggregated("stock-data", flow_data, quality_sections.get("flow")),
+            "flow.order_size.get": self._success_from_aggregated(
+                "stock-data",
+                self._derive_order_size(flow_data),
+                quality_sections.get("flow"),
+            ),
+            "fundamental.valuation.get": self._success_from_aggregated(
+                "stock-data",
+                {
+                    "symbol": aggregated.get("symbol"),
+                    "pe_ttm": valuation_data.get("pe_ttm"),
+                    "pb": valuation_data.get("pb"),
+                    "market_cap": valuation_data.get("market_cap"),
+                },
+                quality_sections.get("finance"),
+            ),
+            "fundamental.metrics.get": self._success_from_aggregated("stock-data", fundamentals_data, quality_sections.get("financial_trend")),
+        }
+
+    def _success_from_aggregated(
+        self,
+        source: str,
+        data: Dict[str, Any],
+        quality_info: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        if not data:
+            return build_error_response(
+                "aggregated_section_missing",
+                "section missing from analysis payload",
+                retryable=False,
+                failed_sources=[source],
+                source_chain=[source],
+            )
+        warning = (quality_info or {}).get("warning")
+        status = "degraded" if warning or (quality_info or {}).get("status") == "degraded" else "ok"
+        issues = [warning] if warning else []
+        return build_success_response(
+            data,
+            source=source,
+            source_chain=[source],
+            status=status,
+            issues=issues,
+            failed_sources=[],
+        )
+
+    def _derive_order_size(self, flow_data: Dict[str, Any]) -> Dict[str, Any]:
+        total = sum(
+            abs(flow_data.get(key, 0) or 0)
+            for key in ("super_large_net", "large_net", "medium_net", "small_net")
+        )
+        if total <= 0:
+            total = 1.0
+        big = abs(flow_data.get("super_large_net", 0) or 0) + abs(flow_data.get("large_net", 0) or 0)
+        small = abs(flow_data.get("small_net", 0) or 0)
+        main = flow_data.get("main_net_inflow", 0) or 0
+        return {
+            "date": flow_data.get("date"),
+            "big_order_ratio": round(big / total, 4),
+            "small_order_ratio": round(small / total, 4),
+            "buy_sell_imbalance": round(main / total, 4),
+        }
 
     def _health_report_get(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         return build_success_response(

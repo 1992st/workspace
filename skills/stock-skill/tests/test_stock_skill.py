@@ -22,6 +22,92 @@ from providers.akshare_provider import AkshareProvider
 from shared.failure_log import ToolFailureRecorder
 
 
+ANALYSIS_PAYLOAD_FIXTURE = {
+    "success": True,
+    "data": {
+        "symbol": "601211",
+        "quote": {
+            "symbol": "601211",
+            "name": "国泰海通",
+            "price": 10.0,
+            "change": 0.2,
+            "change_pct": 2.0,
+            "open": 9.8,
+            "high": 10.2,
+            "low": 9.7,
+            "pre_close": 9.8,
+            "volume": 1000,
+            "amount": 5000,
+            "turnover_rate": 1.5,
+            "volume_ratio": 1.2,
+        },
+        "market": {
+            "indices": [
+                {
+                    "code": "000001",
+                    "name": "上证指数",
+                    "price": 3200,
+                    "change_pct": 0.5,
+                    "volume": 1000000,
+                    "date": "2026-04-24",
+                }
+            ],
+            "count": 1,
+            "timestamp": "2026-04-24T10:00:00",
+        },
+        "sector": {"symbol": "601211", "industry": "证券"},
+        "fund_flow": {
+            "symbol": "601211",
+            "date": "2026-04-24",
+            "main_net_inflow": 100,
+            "super_large_net": 50,
+            "large_net": 20,
+            "medium_net": 10,
+            "small_net": 20,
+        },
+        "fundamental_valuation": {"symbol": "601211", "pe_ttm": 12, "pb": 1.1, "market_cap": 1000000000},
+        "fundamental_trend": {
+            "symbol": "601211",
+            "periods": [
+                {"report_date": "2025-09-30", "revenue_yoy": 8, "profit_yoy": 3, "roe": 8.5, "gross_margin": 19, "debt_ratio": 61},
+                {"report_date": "2025-12-31", "revenue_yoy": 10, "profit_yoy": 5, "roe": 9, "gross_margin": 20, "debt_ratio": 60},
+            ],
+            "latest": {"report_date": "2025-12-31", "revenue_yoy": 10, "profit_yoy": 5, "roe": 9, "gross_margin": 20, "debt_ratio": 60},
+            "count": 2,
+        },
+        "kline_daily": {
+            "symbol": "601211",
+            "period": "daily",
+            "bars": [
+                {"date": "2026-04-18", "open": 9.5, "high": 9.8, "low": 9.4, "close": 9.6, "volume": 100, "amount": 200},
+                {"date": "2026-04-21", "open": 9.6, "high": 9.9, "low": 9.5, "close": 9.7, "volume": 120, "amount": 230},
+                {"date": "2026-04-22", "open": 9.7, "high": 10.0, "low": 9.6, "close": 9.8, "volume": 140, "amount": 260},
+                {"date": "2026-04-23", "open": 9.8, "high": 10.1, "low": 9.7, "close": 9.9, "volume": 160, "amount": 290},
+                {"date": "2026-04-24", "open": 9.9, "high": 10.2, "low": 9.8, "close": 10.0, "volume": 180, "amount": 320},
+            ],
+            "count": 5,
+        },
+        "kline_weekly": {"symbol": "601211", "period": "weekly", "bars": [{"date": "2026-04-24", "close": 10.0}], "count": 1},
+        "kline_monthly": {"symbol": "601211", "period": "monthly", "bars": [{"date": "2026-04-24", "close": 10.0}], "count": 1},
+        "intraday": {"1m": {"symbol": "601211", "bars": [], "count": 0}, "5m": {"symbol": "601211", "bars": [], "count": 0}},
+        "technical_indicators": {"daily": {"ma": {"ma5": 9.8}, "macd": {"dif": 0.1, "dea": 0.05, "hist": 0.1}, "rsi14": 58}},
+        "quality": {
+            "sections": {
+                "quote": {"status": "ok", "source": "stock-data"},
+                "market": {"status": "ok", "source": "stock-data"},
+                "sector": {"status": "ok", "source": "stock-data"},
+                "flow": {"status": "ok", "source": "stock-data"},
+                "finance": {"status": "ok", "source": "stock-data"},
+                "financial_trend": {"status": "ok", "source": "stock-data"},
+                "kline_daily": {"status": "ok", "source": "stock-data"},
+            },
+            "missing_sections": [],
+            "status": "ok",
+        },
+    },
+}
+
+
 class StubAkProvider:
     def quote_get(self, payload):
         return {
@@ -281,13 +367,14 @@ class StockSkillTests(unittest.TestCase):
 
     def test_analysis_stock_prepare_returns_prompt_bundle(self):
         skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
         self.assertEqual(result.status, "ok")
         body = result.data
         self.assertEqual(body["data"]["symbol"], "601211")
         self.assertEqual(body["data"]["prompt_bundle"]["version"], "v1")
         self.assertTrue(body["data"]["prompt_bundle"]["compiled_prompt"])
-        self.assertEqual(body["data"]["prompt_bundle"]["strategy_version"], "v2")
+        self.assertEqual(body["data"]["prompt_bundle"]["bundle_version"], "current")
         self.assertEqual(body["data"]["prompt_bundle"]["activation_source"], "current")
         self.assertIn("REM-R001", body["data"]["prompt_bundle"]["injected_strategy_ids"])
         self.assertIn("REM-R004", body["data"]["prompt_bundle"]["candidate_strategy_ids"])
@@ -299,6 +386,7 @@ class StockSkillTests(unittest.TestCase):
 
     def test_analysis_stock_prepare_selects_sell_side_strategies(self):
         skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         result = skill.run(
             {"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"}
         )
@@ -367,7 +455,7 @@ class StockSkillTests(unittest.TestCase):
             "reasoning": {"primary_factors": ["trend broken"]},
             "summary": "减仓或退出，等待结构修复。",
             "strategy_usage": {
-                "strategy_version": prepared_data["prompt_bundle"]["strategy_version"],
+                "bundle_version": prepared_data["prompt_bundle"]["bundle_version"],
                 "injected_strategy_ids": prepared_data["prompt_bundle"]["injected_strategy_ids"],
                 "cited_strategy_ids": cited,
                 "violated_strategy_ids": [],
@@ -378,6 +466,7 @@ class StockSkillTests(unittest.TestCase):
 
     def test_analysis_result_validate_accepts_consistent_strategy_usage(self):
         skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"})
         data = prepared.data["data"]
         payload = {
@@ -392,6 +481,7 @@ class StockSkillTests(unittest.TestCase):
 
     def test_analysis_result_validate_rejects_non_injected_strategy_ids(self):
         skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
         data = prepared.data["data"]
         payload = {
@@ -400,7 +490,7 @@ class StockSkillTests(unittest.TestCase):
                 **self._valid_analysis_result(data),
                 "recommendation": {"action": "BUY", "confidence": 75, "position_size": "MODERATE"},
                 "strategy_usage": {
-                    "strategy_version": data["prompt_bundle"]["strategy_version"],
+                    "bundle_version": data["prompt_bundle"]["bundle_version"],
                     "injected_strategy_ids": data["prompt_bundle"]["injected_strategy_ids"],
                     "cited_strategy_ids": ["FAKE-R999", "REM-R001"],
                     "violated_strategy_ids": [],
@@ -417,6 +507,7 @@ class StockSkillTests(unittest.TestCase):
 
     def test_analysis_result_validate_rejects_missing_expectation_and_trigger_blocks(self):
         skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
         data = prepared.data["data"]
         analysis_result = self._valid_analysis_result(data)
@@ -482,10 +573,21 @@ class StockSkillTests(unittest.TestCase):
                 }
 
         skill = self.make_skill(ak_provider=MixedNewsProvider())
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
         self.assertEqual(result.status, "ok")
         rumor_check = result.data["data"]["rumor_check"]
         self.assertEqual(rumor_check["final_verdict"], "rumor_only")
+
+    def test_analysis_stock_prepare_uses_aggregated_stock_data_payload(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        self.assertEqual(result.status, "ok")
+        stock_context = result.data["data"]["stock_context"]
+        self.assertEqual(stock_context["quote"]["price"], 10.0)
+        self.assertEqual(stock_context["fundamentals"]["report_date"], "2025-12-31")
+        self.assertEqual(result.data["data"]["sector_context"]["primary_sector"], "证券")
 
 
 class ProviderBehaviorTests(unittest.TestCase):

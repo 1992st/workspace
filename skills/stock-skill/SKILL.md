@@ -58,8 +58,9 @@ python3 runtime/main.py run --skill stock --action health.report.get --input '{}
 ## 分析资源
 - 模块化 prompt：`skills/stock-skill/resources/prompts/v1/`
 - 背景知识：`skills/stock-skill/resources/knowledge/v1/`
-- book 策略编译产物：`prompts/v{N}/compiled/`
-- `analysis.stock.prepare` 会返回现有数据、数据质量状态、工具异常影响、模块化 prompt、已注入 book 策略、策略版本和知识入口，供上层 Agent 做专业分析
+- 说明：这里的 `resources/prompts/v1/` 与 `resources/knowledge/v1/` 是 skill 内部资源快照名，不代表仓库运行时 `prompts/` 版本目录
+- book 策略编译产物：`prompts/current/compiled/`
+- `analysis.stock.prepare` 会返回现有数据、数据质量状态、工具异常影响、模块化 prompt、已注入 book 策略、策略包版本和知识入口，供上层 Agent 做专业分析
 - `analysis.result.validate` 用于校验 LLM 输出是否真实引用了本次注入策略，避免“策略已注入但未生效”
 
 ## 输出契约
