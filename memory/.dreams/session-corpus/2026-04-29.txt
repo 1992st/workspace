@@ -1,0 +1,2 @@
+[agent-radar-desk/sessions/8403e2fd-99db-44b0-9b2b-2d9d2463bba0.jsonl#L8] Assistant: 让我换个方式执行：
+[agent-radar-desk/sessions/8403e2fd-99db-44b0-9b2b-2d9d2463bba0.jsonl#L12] Assistant: 权限受阻，`qmd` CLI 不在 exec allowlist 中，执行被拒绝。 按 AGENTS.md 夜间维护策略，我尝试执行但命中安全限制。任务已 **BLOCKED**，需要你手动处理： ```bash cd /Volumes/zhangstExtern/openclaw/workspace/agent-radar-desk # 1) collection自检并补齐 qmd collection check qmd collection repair # 2) qmd update qmd updat

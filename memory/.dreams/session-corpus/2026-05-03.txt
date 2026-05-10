@@ -1,0 +1,4 @@
+[agent-radar-desk/sessions/7ff940e5-cd90-418a-b1ce-f2357b74d135.jsonl#L14] Assistant: 状态正常，6432 文件 / 38327 向量，索引 1 天前更新。继续执行 `qmd update --pull`：
+[agent-radar-desk/sessions/7ff940e5-cd90-418a-b1ce-f2357b74d135.jsonl#L16] Assistant: `qmd update --pull` 完成，59 个 collection 全部扫描完毕，0 新增 / 0 更新 / 0 删除，所有文件均为 unchanged。继续执行 `qmd embed`：
+[agent-radar-desk/sessions/7ff940e5-cd90-418a-b1ce-f2357b74d135.jsonl#L18] Assistant: `qmd embed` 完成：9 文档 / 35 chunks / 67.6 KB，3 秒完成。最后执行 `qmd status` 确认最终状态：
+[agent-radar-desk/sessions/7ff940e5-cd90-418a-b1ce-f2357b74d135.jsonl#L20] Assistant: 夜间 QMD 维护完成。汇总报告： | 步骤 | 结果 | |------|------| | `qmd status`（初始） | 6432 文件 / 38327 向量 / 1d 前更新 | | `qmd update --pull` | 59 collections 扫描，0 新增 0 更新 0 删除 | | `qmd embed` | 9 文档 / 35 chunks / 67.6 KB，3 秒完成 | | `qmd status`（最终） | **6453 文件 / 38362 向量 / 21h 前更新

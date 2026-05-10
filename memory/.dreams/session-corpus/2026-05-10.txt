@@ -1,0 +1,4 @@
+[agent-radar-desk/sessions/f5b9babe-1c96-4b04-b225-d6d798a505a2.jsonl#L8] Assistant: 状态正常：索引 534MB，6579 文件，38516 向量。`memory-dir-custom` 昨天已更新。继续执行 pull → embed 流程。
+[agent-radar-desk/sessions/f5b9babe-1c96-4b04-b225-d6d798a505a2.jsonl#L12] Assistant: `qmd update --pull` 成功完成——所有 59 个 collection 均扫描完毕，各 workspace 检测到少量新文件（3-3 个新文档），总计 7 个 hash 需要更新 embedding。继续执行 `qmd embed`。
+[agent-radar-desk/sessions/f5b9babe-1c96-4b04-b225-d6d798a505a2.jsonl#L14] Assistant: Embedding 完成：7 个文档/31 个块，3 秒完成。最后执行 `qmd status` 确认最终状态。
+[agent-radar-desk/sessions/f5b9babe-1c96-4b04-b225-d6d798a505a2.jsonl#L16] Assistant: ✅ **QMD 夜间维护完成（agent-radar-desk）** | 步骤 | 状态 | 详情 | |------|------|------| | 1️⃣ `qmd status`（初始） | ✅ | 索引 534.3MB，6579 文件，38516 向量 | | 2️⃣ `qmd update --pull` | ✅ | 59 个 collection 全部扫描，7 个 hash 待嵌入 | | 3️⃣ `qmd embed` | ✅ | 7 文档 → 31 块嵌入，3 秒完成 (23.9 KB/s) 
