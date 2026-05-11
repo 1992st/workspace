@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1 id="skill-title">Skill Viewer</h1>
+        <p id="skill-subtitle" class="subtitle">Viewer is bound to the generated skill model.</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="pick-directory-btn">启用本地编辑</button>
+        <button id="pick-files-btn">选择 Skill 文件夹（只读）</button>
+        <button id="reload-btn" disabled>重新绑定</button>
+      </div>
+    </header>
+
+    <section class="statusbar">
+      <div><strong>模式：</strong><span id="mode-status">未知</span></div>
+      <div><strong>浏览器：</strong><span id="support-status">检测中</span></div>
+      <div><strong>编辑：</strong><span id="edit-status">无未保存修改</span></div>
+    </section>
+
+    <section class="overview panel">
+      <div>
+        <h2>Agent Overview</h2>
+        <p id="overview-responsibility">等待模型加载</p>
+      </div>
+      <div class="overview-grid">
+        <div>
+          <strong>适用场景</strong>
+          <ul id="overview-use"></ul>
+        </div>
+        <div>
+          <strong>不适用/边界</strong>
+          <ul id="overview-boundaries"></ul>
+        </div>
+        <div>
+          <strong>核心产出</strong>
+          <ul id="overview-outputs"></ul>
+        </div>
+      </div>
+    </section>
+
+    <main class="layout">
+      <aside class="sidebar panel">
+        <h2>Flows</h2>
+        <div id="flow-nav" class="flow-nav"></div>
+        <h2>Quality</h2>
+        <div id="quality-list" class="quality-list"></div>
+      </aside>
+
+      <section class="content panel">
+        <div id="flow-canvas" class="flow-canvas"></div>
+      </section>
+
+      <aside class="detail panel">
+        <div class="detail-header">
+          <h2 id="detail-title">Flow Detail</h2>
+          <div class="detail-actions">
+            <button id="reset-btn" disabled>重置</button>
+            <button id="save-btn" disabled>保存</button>
+          </div>
+        </div>
+        <div id="flow-detail" class="flow-detail"></div>
+        <div id="file-meta" class="file-meta">未选择文件</div>
+        <textarea id="editor" class="editor" spellcheck="false" disabled></textarea>
+        <pre id="preview" class="preview">请选择文件</pre>
+      </aside>
+    </main>
+
+    <template id="flow-button-template">
+      <button class="flow-button" type="button"></button>
+    </template>
+
+    <template id="step-template">
+      <article class="flow-step">
+        <div class="step-index"></div>
+        <div class="step-body">
+          <h3 class="step-title"></h3>
+          <p class="step-description"></p>
+          <div class="step-lists"></div>
+          <div class="step-assets"></div>
+        </div>
+      </article>
+    </template>
+
+    <template id="asset-template">
+      <button class="asset-chip" type="button">
+        <span class="asset-kind"></span>
+        <strong class="asset-name"></strong>
+        <span class="asset-path"></span>
+      </button>
+    </template>
+
+    <input id="file-picker-input" type="file" webkitdirectory directory multiple hidden />
+    <!-- SKILL_MODEL_JSON -->
+    <!-- QUALITY_REPORT_JSON -->
+    <script defer src="./app.js"></script>
+  </body>
+</html>
