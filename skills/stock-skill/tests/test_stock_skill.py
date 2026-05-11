@@ -379,10 +379,18 @@ class StockSkillTests(unittest.TestCase):
         self.assertIn("REM-R001", body["data"]["prompt_bundle"]["injected_strategy_ids"])
         self.assertIn("REM-R004", body["data"]["prompt_bundle"]["candidate_strategy_ids"])
         self.assertIn("evidence_threshold", body["data"]["data_quality"])
+        self.assertEqual(body["data"]["data_quality"]["analysis_type_requested"], "standard")
+        self.assertEqual(body["data"]["data_quality"]["analysis_type_actual"], "scan")
+        self.assertEqual(body["data"]["data_quality"]["confidence_cap"], 50)
+        self.assertIn("data_requirements_context", body["data"])
+        self.assertIn("financial_methodology_context", body["data"])
+        self.assertIn("dynamic-data-requirements", body["data"]["prompt_bundle"]["compiled_prompt"])
+        self.assertIn("dynamic-financial-methodology", body["data"]["prompt_bundle"]["compiled_prompt"])
         self.assertIn("market_context", body["data"])
         self.assertIn("capital_context", body["data"])
         self.assertIn("expectation_context", body["data"])
         self.assertTrue(body["data"]["news_signal_board"])
+        self.assertTrue(body["data"]["error_case_signals"])
 
     def test_analysis_stock_prepare_selects_sell_side_strategies(self):
         skill = self.make_skill()
@@ -391,15 +399,31 @@ class StockSkillTests(unittest.TestCase):
             {"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"}
         )
         self.assertEqual(result.status, "ok")
+        self.assertEqual(result.data["data"]["data_quality"]["analysis_type_requested"], "standard")
         injected = result.data["data"]["prompt_bundle"]["injected_strategy_ids"]
         self.assertIn("REM-R007", injected)
         self.assertIn("REM-R009", injected)
         self.assertNotIn("REM-R004", injected)
 
+    def test_analysis_stock_prepare_selects_deep_for_buy_intent(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        result = skill.run(
+            {"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "buy"}
+        )
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.data["data"]["data_quality"]["analysis_type_requested"], "deep")
+
     def _valid_analysis_result(self, prepared_data):
         injected = prepared_data["prompt_bundle"]["injected_strategy_ids"]
         cited = injected[:2] if len(injected) >= 2 else injected
         return {
+            "analysis_meta": {
+                "analysis_type": prepared_data["data_quality"]["analysis_type_actual"],
+                "data_completeness": prepared_data["data_quality"]["data_completeness"],
+                "confidence_cap": prepared_data["data_quality"]["confidence_cap"],
+                "degradation_reason": prepared_data["data_quality"]["degradation_reason"],
+            },
             "market_regime": {
                 "current_regime": "theme_rotation",
                 "risk_appetite": "high",
@@ -433,6 +457,19 @@ class StockSkillTests(unittest.TestCase):
                 "relative_strength": "stronger_than_index",
                 "notes": "放量且强于指数。",
             },
+            "counter_evidence": {
+                "strongest_counter_points": [
+                    "板块持续性仍需次日量能确认",
+                    "若指数回落，个股强势可能快速衰减",
+                ],
+                "why_not_decisive": "当前资金确认和相对强弱仍支持主结论，但需要后续验证。",
+            },
+            "bias_check": {
+                "recency_bias_check": "已结合当前分析级别所需窗口，不是只看短窗。",
+                "single_variable_check": "结论同时使用市场、板块、资金和估值信息。",
+                "narrative_check": "关键判断都有量价和资金数字支撑。",
+                "cross_ticker_framework_check": "没有直接套用其他高波动股票的量价语言。",
+            },
             "scenario_plan": {
                 "bull_case": "放量突破后加速",
                 "base_case": "维持强势震荡",
@@ -454,6 +491,11 @@ class StockSkillTests(unittest.TestCase):
             "recommendation": {"action": "SELL", "confidence": 72, "position_size": "MODERATE"},
             "reasoning": {"primary_factors": ["trend broken"]},
             "summary": "减仓或退出，等待结构修复。",
+            "profile_updates": {
+                "support_resistance_updates": ["10.0 附近为近期确认支撑"],
+                "behavior_pattern_updates": ["放量且强于指数时延续性更高"],
+                "analysis_index_entry": "2026-04-24 Standard SELL 72%",
+            },
             "strategy_usage": {
                 "bundle_version": prepared_data["prompt_bundle"]["bundle_version"],
                 "injected_strategy_ids": prepared_data["prompt_bundle"]["injected_strategy_ids"],
@@ -469,9 +511,11 @@ class StockSkillTests(unittest.TestCase):
         skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
         prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211", "action_intent": "sell"})
         data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result["recommendation"]["confidence"] = 35
         payload = {
             "action": "analysis.result.validate",
-            "analysis_result": self._valid_analysis_result(data),
+            "analysis_result": analysis_result,
             "prompt_bundle": data["prompt_bundle"],
             "data_quality": data["data_quality"],
         }
@@ -524,6 +568,40 @@ class StockSkillTests(unittest.TestCase):
         joined = " ".join(result.data["data"]["errors"])
         self.assertIn("expectation_analysis", joined)
         self.assertIn("trigger_and_invalidation", joined)
+
+    def test_analysis_result_validate_rejects_confidence_above_cap(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result["recommendation"]["confidence"] = 61
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        self.assertIn("exceeds data_quality.confidence_cap", " ".join(result.data["data"]["errors"]))
+
+    def test_analysis_result_validate_rejects_missing_counter_evidence(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result.pop("counter_evidence")
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        self.assertIn("counter_evidence", " ".join(result.data["data"]["errors"]))
 
     def test_tool_failure_is_recorded(self):
         temp_dir = tempfile.TemporaryDirectory()
@@ -588,6 +666,60 @@ class StockSkillTests(unittest.TestCase):
         self.assertEqual(stock_context["quote"]["price"], 10.0)
         self.assertEqual(stock_context["fundamentals"]["report_date"], "2025-12-31")
         self.assertEqual(result.data["data"]["sector_context"]["primary_sector"], "证券")
+
+    def test_analysis_stock_prepare_loads_profile_context(self):
+        skill = self.make_skill()
+        profile_dir = skill.root / "data" / "watchlist" / "active" / "601211"
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        profile_path = profile_dir / "profile.md"
+        original_content = profile_path.read_text(encoding="utf-8") if profile_path.exists() else None
+
+        def restore_profile():
+            if original_content is None:
+                profile_path.unlink(missing_ok=True)
+            else:
+                profile_path.write_text(original_content, encoding="utf-8")
+
+        self.addCleanup(restore_profile)
+        profile_path.write_text(
+            "# 国泰海通(601211) 股票档案\n\n"
+            "## 关键价位\n- 16.00 测试 5 次未破\n\n"
+            "## 股性特征\n- 与券商板块联动强\n\n"
+            "## 分析历史索引\n- 2026-05-08 Standard HOLD 70%\n",
+            encoding="utf-8",
+        )
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        result = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        self.assertEqual(result.status, "ok")
+        profile_context = result.data["data"]["profile_context"]
+        self.assertIn("16.00", profile_context["support_resistance"])
+        self.assertIn("联动强", profile_context["behavior_patterns"])
+
+    def test_financial_methodology_context_changes_with_source_file(self):
+        skill = self.make_skill()
+        source_path = skill.resource_loader.repo_root / "references" / "financial_analysis_resources.md"
+        original = source_path.read_text(encoding="utf-8")
+
+        def restore():
+            source_path.write_text(original, encoding="utf-8")
+
+        self.addCleanup(restore)
+        source_path.write_text(original + "\n\n## 临时测试段\n动态注入标记A\n", encoding="utf-8")
+        context = skill.resource_loader.load_financial_methodology_context()
+        self.assertIn("动态注入标记A", context["raw_excerpt"] + source_path.read_text(encoding="utf-8"))
+
+    def test_data_requirements_context_changes_with_source_file(self):
+        skill = self.make_skill()
+        source_path = skill.resource_loader.repo_root / "references" / "data_requirements_spec.md"
+        original = source_path.read_text(encoding="utf-8")
+
+        def restore():
+            source_path.write_text(original, encoding="utf-8")
+
+        self.addCleanup(restore)
+        source_path.write_text(original + "\n\n## 临时测试段\n动态注入标记B\n", encoding="utf-8")
+        context = skill.resource_loader.load_data_requirements_context()
+        self.assertIn("动态注入标记B", context["raw_excerpt"] + source_path.read_text(encoding="utf-8"))
 
 
 class ProviderBehaviorTests(unittest.TestCase):

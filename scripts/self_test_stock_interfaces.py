@@ -132,6 +132,12 @@ def build_validation_payload(prepared: Dict[str, Any]) -> Dict[str, Any]:
     cited = prompt_bundle["injected_strategy_ids"][:2] or prompt_bundle["injected_strategy_ids"]
     return {
         "analysis_result": {
+            "analysis_meta": {
+                "analysis_type": prepared["data_quality"]["analysis_type_actual"],
+                "data_completeness": prepared["data_quality"]["data_completeness"],
+                "confidence_cap": prepared["data_quality"]["confidence_cap"],
+                "degradation_reason": prepared["data_quality"]["degradation_reason"],
+            },
             "market_regime": {
                 "current_regime": "theme_rotation",
                 "risk_appetite": "neutral",
@@ -165,6 +171,16 @@ def build_validation_payload(prepared: Dict[str, Any]) -> Dict[str, Any]:
                 "relative_strength": "stronger_than_index",
                 "notes": "量价和资金方向一致。",
             },
+            "counter_evidence": {
+                "strongest_counter_points": ["若量能无法持续，强势可能失效"],
+                "why_not_decisive": "当前市场、板块和资金证据仍支撑观察性结论。",
+            },
+            "bias_check": {
+                "recency_bias_check": "已按运行时注入的分析级别处理，不是只看短窗。",
+                "single_variable_check": "同步检查市场、板块和资金证据。",
+                "narrative_check": "未使用无数字支撑叙事替代证据。",
+                "cross_ticker_framework_check": "未直接套用其他股票框架。",
+            },
             "scenario_plan": {
                 "bull_case": "放量突破后加速",
                 "base_case": "维持强势震荡",
@@ -185,7 +201,7 @@ def build_validation_payload(prepared: Dict[str, Any]) -> Dict[str, Any]:
             },
             "recommendation": {
                 "action": "HOLD",
-                "confidence": 62,
+                "confidence": min(50, int(prepared["data_quality"]["confidence_cap"])),
                 "position_size": "LIGHT",
             },
             "reasoning": {
@@ -193,7 +209,7 @@ def build_validation_payload(prepared: Dict[str, Any]) -> Dict[str, Any]:
             },
             "summary": "维持观察或轻仓持有，等进一步确认。",
             "strategy_usage": {
-                "strategy_version": prompt_bundle["strategy_version"],
+                "bundle_version": prompt_bundle["bundle_version"],
                 "injected_strategy_ids": prompt_bundle["injected_strategy_ids"],
                 "cited_strategy_ids": cited,
                 "violated_strategy_ids": [],
@@ -266,8 +282,8 @@ def main() -> int:
         ("stock-skill fundamental.metrics.get", "fundamental.metrics.get", {"symbol": symbol}, ["data.data.report_date", "data.data.roe"]),
         ("stock-skill sector.map.get", "sector.map.get", {"symbol": symbol}, ["data.data.primary_sector"]),
         ("stock-skill sector.heat.get", "sector.heat.get", {"sector": "证券"}, ["data.data.sector", "data.data.change_pct"]),
-        ("stock-skill health.report.get", "health.report.get", {}, ["data.data.data.sources"]),
-        ("stock-skill analysis.stock.prepare", "analysis.stock.prepare", {"symbol": symbol}, ["data.data.prompt_bundle", "data.data.data_quality", "data.data.stock_context"]),
+        ("stock-skill health.report.get", "health.report.get", {}, ["data.data.sources"]),
+        ("stock-skill analysis.stock.prepare", "analysis.stock.prepare", {"symbol": symbol}, ["data.data.prompt_bundle", "data.data.data_quality", "data.data.stock_context", "data.data.data_requirements_context", "data.data.financial_methodology_context"]),
     ]
     for name, action, payload, required in stock_skill_checks:
         print(f"Running {name} ...", flush=True)

@@ -21,6 +21,7 @@ version: 1.0
 - 使用 `prompts/current/stock_analysis.md`
 - 结合 `prompts/current/investment_rules.md`
 - 如果运行时已注入编译后的 book strategies，还要遵守 `prompts/current/compiled/`
+- 若正式走 `stock-skill` 分析链路，以上层 `analysis.stock.prepare` 返回的 `compiled_prompt` 为唯一执行约束源；`prompts/current/stock_analysis.md` 需与之保持同语义
 
 ### 书籍提炼/方法沉淀任务
 - 使用 `prompts/current/book_method_extraction.md`
@@ -258,6 +259,37 @@ ROE:
 ```
 
 ## 分析流程
+### 数据需求与降级
+- 先识别本次属于 `Scan / Standard / Deep / Review` 哪种分析类型
+- 对照 `references/data_requirements_spec.md` 检查必须项和建议项
+- 该文档不仅是运行时配置来源，也属于分析思路的一部分，必须进入分析前置判断
+- 必须项缺失时先补数；补不到则降级分析，而不是假装完成原级别分析
+- 分析输出必须先声明：
+  - 分析类型
+  - 数据完整度
+  - 置信度上限
+  - 降级原因（如有）
+- 不再把 `scripts/analysis_gate.py` 作为“不过门就拒绝分析”的正式主流程；它仅作为辅助诊断工具
+
+### 反证与偏差检查
+- 每次分析都必须显式写出最强反证
+- 必须检查：
+  - 是否只用了极短时间窗
+  - 是否只用了单一维度
+  - 是否用叙事替代了数字证据
+  - 是否把别的股票框架直接套在当前标的上
+
+### 个股档案使用
+- 若存在 `data/watchlist/active/{code}/profile.md`，分析时应优先读取：
+  - 关键价位及确认次数
+  - 股性特征
+  - 最近分析历史
+- 这些内容属于“历史记忆”，可以辅助修正近因偏差，但不能替代本次实时数据
+
+### 财报方法资源
+- `references/financial_analysis_resources.md` 必须作为分析思路辅助资源动态读取
+- `Standard` 以上分析若已具备估值或基本财务数据，应参考其中的财报健康度、盈利质量、风险识别、估值判断框架
+- 财报方法资源不能替代市场、板块、资金证据，但必须能进入基本面判断和反证部分
 
 ```
 开始分析

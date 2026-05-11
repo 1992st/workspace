@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 import subprocess
 import json
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -253,6 +254,8 @@ class StockSkill(BaseSkill):
             selection_context={
                 "action_intent": payload.get("action_intent", "observe"),
                 "requested_tags": payload.get("strategy_tags", []),
+                "analysis_type": payload.get("analysis_type"),
+                "profile_context": self._load_profile_context(symbol),
             },
         )
         failed_actions = [
@@ -270,6 +273,25 @@ class StockSkill(BaseSkill):
             issues=issues,
             failed_sources=failed_actions,
         )
+
+    def _load_profile_context(self, symbol: str) -> Dict[str, Any]:
+        profile_path = self.root / "data" / "watchlist" / "active" / str(symbol).zfill(6) / "profile.md"
+        if not profile_path.exists():
+            return {}
+        content = profile_path.read_text(encoding="utf-8")
+        return {
+            "path": str(profile_path),
+            "support_resistance": self._extract_profile_section(content, "关键价位"),
+            "behavior_patterns": self._extract_profile_section(content, "股性特征"),
+            "recent_analysis_index": self._extract_profile_section(content, "分析历史索引"),
+        }
+
+    def _extract_profile_section(self, content: str, section_title: str) -> str:
+        pattern = rf"## {re.escape(section_title)}\n(.*?)(?:\n## |\Z)"
+        match = re.search(pattern, content, re.DOTALL)
+        if not match:
+            return ""
+        return match.group(1).strip()
 
     def _load_analysis_payload(self, symbol: str) -> Dict[str, Any]:
         cmd = ["python3", str(self.stock_data_script), "analysis", symbol]

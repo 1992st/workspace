@@ -14,6 +14,8 @@
 
 新增硬要求：
 - 分析顺序固定为：市场预期 -> 板块位置 -> 个股受益逻辑 -> 资金确认 -> 交易计划。
+- 必须先依据运行时注入的 `data_requirements_context` 判断分析级别、数据缺口和置信度上限。
+- 若运行时注入了 `financial_methodology_context`，必须将其纳入基本面判断和反证思路。
 - 必须先写交易假设，再写支持证据和最强反证，最后写执行条件。
 - 消息不能直接等于机会，必须判断来源级别、真假状态、是否已被 price in、是否有资金承接。
 
@@ -107,6 +109,7 @@
 - 仓位建议
 
 ### 7. 运行时必需区块
+- 必须输出 `analysis_meta`
 - 必须输出 `market_regime`
 - 必须输出 `sector_positioning`
 - 必须输出 `expectation_analysis`
@@ -115,6 +118,8 @@
 - 必须输出 `trigger_and_invalidation`
 - 必须输出 `source_reliability`
 - 必须输出 `rumor_check`
+- 必须输出 `counter_evidence`
+- 必须输出 `bias_check`
 - 这些区块用于运行时校验、复盘归档和证据链检查，不能省略
 
 ## 输出格式（JSON）
@@ -158,6 +163,12 @@
     "evidence": "...",
     "chip_status": "集中|分散|锁定"
   },
+  "analysis_meta": {
+    "analysis_type": "scan|standard|deep|review",
+    "data_completeness": "完整|部分缺失|不足",
+    "confidence_cap": 75,
+    "degradation_reason": "..."
+  },
   "market_regime": {
     "current_market_expectation": "...",
     "phase": "bullish|bearish|sideways|uncertain",
@@ -186,6 +197,16 @@
     "verdict": "confirmed|mixed|missing|rejected",
     "signals": ["..."],
     "notes": "..."
+  },
+  "counter_evidence": {
+    "strongest_counter_points": ["..."],
+    "why_not_decisive": "..."
+  },
+  "bias_check": {
+    "recency_bias_check": "...",
+    "single_variable_check": "...",
+    "narrative_check": "...",
+    "cross_ticker_framework_check": "..."
   },
   "scenario_plan": {
     "bull_case": "...",
@@ -230,6 +251,11 @@
     "risk_note": "...",
     "time_window": "...",
     "reasoning": "..."
+  },
+  "profile_updates": {
+    "support_resistance_updates": ["..."],
+    "behavior_pattern_updates": ["..."],
+    "analysis_index_entry": "..."
   },
   "strategy_usage": {
     "bundle_version": "<runtime_bundle_version>",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
 
@@ -76,6 +77,8 @@ def build_stock_analysis_context(
             )
 
     threshold = resource_bundle["evidence_threshold"]
+    requirements = resource_bundle["analysis_requirements"]
+    selected_analysis_type = _resolve_analysis_type(selection_context or {}, requirements)
     hard_blockers = threshold["hard_blockers"]
     trade_plan_ready = all(
         responses[action].get("status") in {"ok", "degraded"} for action in hard_blockers
@@ -91,6 +94,13 @@ def build_stock_analysis_context(
         confidence_gate = "insufficient_data"
     elif not capital_ready:
         confidence_gate = "observe_only"
+
+    data_requirement_report = _build_data_requirement_report(
+        requested_type=selected_analysis_type,
+        evidence_map=evidence_map,
+        responses=responses,
+        requirements=requirements,
+    )
 
     market_context = _build_market_context(analysis_context)
     sector_context = _build_sector_context(analysis_context)
@@ -110,7 +120,10 @@ def build_stock_analysis_context(
     strategy_context = _build_strategy_context(
         responses=responses,
         confidence_gate=confidence_gate,
-        selection_context=selection_context or {},
+        selection_context={
+            **(selection_context or {}),
+            "analysis_type": data_requirement_report["analysis_type_actual"],
+        },
     )
     strategy_bundle = _build_strategy_bundle(
         artifacts=resource_bundle.get("strategy_artifacts", {}),
@@ -169,6 +182,24 @@ def build_stock_analysis_context(
             "entries": [
                 {"name": entry["name"], "path": entry["path"], "excerpt": entry["content"][:240]}
                 for entry in resource_bundle["knowledge_entries"]
+            ] + [
+                {
+                    "name": "data_requirements_context",
+                    "path": resource_bundle["data_requirements_context"]["source_path"],
+                    "excerpt": resource_bundle["data_requirements_context"]["summary"][:240],
+                },
+                {
+                    "name": "financial_methodology_context",
+                    "path": resource_bundle["financial_methodology_context"]["source_path"],
+                    "excerpt": resource_bundle["financial_methodology_context"]["summary"][:240],
+                },
+            ] + [
+                {
+                    "name": f"error_case:{signal['code']}",
+                    "path": signal["source_path"],
+                    "excerpt": signal["summary"],
+                }
+                for signal in resource_bundle.get("error_case_signals", [])
             ],
         },
         "strategy_bundle": strategy_bundle,
@@ -181,6 +212,10 @@ def build_stock_analysis_context(
         "source_reliability_map": source_reliability_map,
         "rumor_check": rumor_check,
         "expectation_context": expectation_context,
+        "profile_context": deepcopy((selection_context or {}).get("profile_context") or {}),
+        "data_requirements_context": deepcopy(resource_bundle.get("data_requirements_context", {})),
+        "financial_methodology_context": deepcopy(resource_bundle.get("financial_methodology_context", {})),
+        "error_case_signals": resource_bundle.get("error_case_signals", []),
         "data_quality": {
             "available_sections": available_sections,
             "missing_sections": missing_sections,
@@ -191,6 +226,16 @@ def build_stock_analysis_context(
             "capital_ready": capital_ready,
             "market_ready": market_ready,
             "sector_ready": sector_ready,
+            "analysis_type_requested": data_requirement_report["analysis_type_requested"],
+            "analysis_type_actual": data_requirement_report["analysis_type_actual"],
+            "data_completeness": data_requirement_report["data_completeness"],
+            "required_sections": data_requirement_report["required_sections"],
+            "optional_sections": data_requirement_report["optional_sections"],
+            "missing_required_sections": data_requirement_report["missing_required_sections"],
+            "missing_optional_sections": data_requirement_report["missing_optional_sections"],
+            "degradation_reason": data_requirement_report["degradation_reason"],
+            "confidence_cap": data_requirement_report["confidence_cap"],
+            "requirement_report": data_requirement_report,
         },
         "guidance": _build_guidance(
             trade_plan_ready=trade_plan_ready and confidence_gate == "ready_for_trade_plan",
@@ -226,6 +271,100 @@ def _build_guidance(
         "tool_failure_impact": tool_failures,
         "next_steps": next_steps,
     }
+
+
+def _resolve_analysis_type(selection_context: Dict[str, Any], requirements: Dict[str, Any]) -> str:
+    requested = str(selection_context.get("analysis_type") or "").strip().lower()
+    if requested in requirements["types"]:
+        return requested
+    action_intent = str(selection_context.get("action_intent") or "observe").strip().lower()
+    if action_intent in {"buy", "add", "rebalance", "build"}:
+        return "deep"
+    if action_intent in {"sell", "trim", "hold", "exit", "reduce", "watch", "observe"}:
+        return "standard"
+    if action_intent in {"review", "post_close_review"}:
+        return "review"
+    return str(requirements.get("default_analysis_type") or "standard")
+
+
+def _build_data_requirement_report(
+    *,
+    requested_type: str,
+    evidence_map: Dict[str, Dict[str, Any]],
+    responses: Dict[str, Dict[str, Any]],
+    requirements: Dict[str, Any],
+) -> Dict[str, Any]:
+    actual_type = requested_type
+    config = requirements["types"][actual_type]
+    missing_required = _missing_sections(
+        config["required_sections"],
+        evidence_map,
+        responses,
+        config["min_kline_bars"],
+    )
+    degradation_reason = ""
+    if missing_required and config["fallback_type"] != actual_type:
+        fallback_type = config["fallback_type"]
+        fallback_config = requirements["types"][fallback_type]
+        fallback_missing = _missing_sections(
+            fallback_config["required_sections"],
+            evidence_map,
+            responses,
+            fallback_config["min_kline_bars"],
+        )
+        actual_type = fallback_type
+        config = fallback_config
+        degradation_reason = (
+            f"{requested_type} 缺少关键数据: {', '.join(missing_required)}，降级为 {fallback_type}"
+        )
+        missing_required = fallback_missing
+
+    missing_optional = _missing_sections(
+        config["optional_sections"],
+        evidence_map,
+        responses,
+        config["min_kline_bars"],
+    )
+    data_completeness = "完整"
+    if missing_required:
+        data_completeness = "不足"
+    elif missing_optional:
+        data_completeness = "部分缺失"
+    confidence_cap = int(config["confidence_cap"])
+    if missing_required:
+        confidence_cap = min(confidence_cap, 35)
+    elif missing_optional:
+        confidence_cap = max(30, confidence_cap - min(15, len(missing_optional) * 5))
+    return {
+        "analysis_type_requested": requested_type,
+        "analysis_type_actual": actual_type,
+        "data_completeness": data_completeness,
+        "required_sections": list(config["required_sections"]),
+        "optional_sections": list(config["optional_sections"]),
+        "missing_required_sections": missing_required,
+        "missing_optional_sections": missing_optional,
+        "degradation_reason": degradation_reason,
+        "confidence_cap": confidence_cap,
+    }
+
+
+def _missing_sections(
+    section_names: List[str],
+    evidence_map: Dict[str, Dict[str, Any]],
+    responses: Dict[str, Dict[str, Any]],
+    min_kline_bars: int,
+) -> List[str]:
+    missing: List[str] = []
+    for section_name in section_names:
+        status = evidence_map.get(section_name, {}).get("status")
+        if status not in {"ok", "degraded"}:
+            missing.append(section_name)
+            continue
+        if section_name == "kline":
+            bars = responses.get("kline.get", {}).get("data", {}).get("bars", [])
+            if len(bars) < min_kline_bars:
+                missing.append(f"kline<{min_kline_bars}")
+    return missing
 
 
 def _build_strategy_context(

@@ -66,6 +66,9 @@ def validate_analysis_result(
         recommendation = {}
 
     required_blocks = [
+        "analysis_meta",
+        "counter_evidence",
+        "bias_check",
         "reasoning",
         "market_regime",
         "sector_positioning",
@@ -86,6 +89,9 @@ def validate_analysis_result(
     confidence = _coerce_confidence(recommendation.get("confidence"))
     confidence_gate = str(data_quality.get("confidence_gate") or "")
     position_size = str(recommendation.get("position_size") or "").upper()
+    analysis_meta = analysis_result.get("analysis_meta", {})
+    counter_evidence = analysis_result.get("counter_evidence", {})
+    bias_check = analysis_result.get("bias_check", {})
     expectation_analysis = analysis_result.get("expectation_analysis", {})
     capital_confirmation = analysis_result.get("capital_confirmation", {})
     scenario_plan = analysis_result.get("scenario_plan", {})
@@ -95,6 +101,18 @@ def validate_analysis_result(
 
     if action in TRADE_ACTIONS and confidence >= 60 and len(cited_ids) < 2:
         errors.append("high-confidence BUY/SELL recommendations must cite at least 2 injected strategies")
+
+    confidence_cap = _coerce_confidence(data_quality.get("confidence_cap"))
+    if confidence_cap > 0 and confidence > confidence_cap:
+        errors.append("recommendation.confidence exceeds data_quality.confidence_cap")
+
+    requested_type = str(data_quality.get("analysis_type_requested") or "")
+    actual_type = str(data_quality.get("analysis_type_actual") or "")
+    if actual_type and analysis_meta.get("analysis_type") != actual_type:
+        errors.append("analysis_meta.analysis_type must match data_quality.analysis_type_actual")
+
+    if actual_type != requested_type and action in TRADE_ACTIONS and confidence >= 60:
+        errors.append("degraded analyses cannot output BUY/SELL with confidence >= 60")
 
     if confidence_gate != "ready_for_trade_plan" and action in TRADE_ACTIONS and confidence >= 60:
         errors.append("insufficient-data runs cannot output high-confidence BUY/SELL recommendations")
@@ -118,6 +136,23 @@ def validate_analysis_result(
     capital_verdict = str(capital_confirmation.get("verdict") or "").strip().lower()
     if capital_verdict in {"", "unknown"}:
         errors.append("capital_confirmation.verdict must be explicit")
+
+    if not _has_any_values(analysis_meta, ("analysis_type", "data_completeness", "confidence_cap")):
+        errors.append("analysis_meta must include analysis_type, data_completeness, and confidence_cap")
+
+    if not _has_any_values(counter_evidence, ("strongest_counter_points", "why_not_decisive")):
+        errors.append("counter_evidence must include strongest_counter_points and why_not_decisive")
+
+    if not _has_any_values(
+        bias_check,
+        (
+            "recency_bias_check",
+            "single_variable_check",
+            "narrative_check",
+            "cross_ticker_framework_check",
+        ),
+    ):
+        errors.append("bias_check must include all four bias checks")
 
     if not _has_any_values(scenario_plan, ("bull_case", "base_case", "bear_case")):
         errors.append("scenario_plan must include bull_case, base_case, and bear_case")
