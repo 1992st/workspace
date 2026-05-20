@@ -1,0 +1,769 @@
+#!/usr/bin/env node
+/**
+ * Stone - 简化监控脚本（不需要模块化）
+ * 直接使用 OpenClaw 工具调用
+ */
+
+import fs from 'fs';
+import path from 'path';
+
+const AGENT_STATES = '/Volumes/zhangstExtern/openclaw/workspace/stone/AGENT-STATES.md';
+const MONITOR_LOG = '/Volumes/zhangstExtern/openclaw/workspace/stone/MONITOR-LOG.md';
+const WORKSPACE = '/Volumes/zhangstExtern/openclaw/workspace/stone';
+
+// 模拟 OpenClaw 工具调用
+const exec = async (command, options) => {
+  const { exec: childExec } = await import('child_process');
+  return new Promise((resolve, reject) => {
+    childExec(command, options, (error, stdout, stderr) => {
+      if (error) {
+        reject({ error, stdout, stderr });
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+};
+
+const read = async (filePath, options = {}) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filePath, { encoding: 'utf8', ...options }, (error, data) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+};
+
+const write = async (filePath, content) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(filePath, content, { encoding: 'utf8' }, (error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
+// Agent 配置
+const AGENTS = {
+  ffmedia: {
+    workspace: '/Users/zhangst/.openclaw/workspace/ffmedia/',
+    sessionDir: '/Users/zhangst/.openclaw/agents/ffmedia/sessions/',
+    priority: 'high',
+    stopThreshold: 60, // 1 小时
+  },
+  agentmesh: {
+    workspace: '/Users/zhangst/.openclaw/workspace/agentmesh/',
+    sessionDir: '/Users/zhangst/.openclaw/agents/agentmesh/sessions/',
+    priority: 'medium',
+    stopThreshold: 1440, // 24 小时
+  },
+  'Ai-StockAssistant': {
+    workspace: '/Users/zhangst/.openclaw/workspace/Ai-StockAssistant/',
+    sessionDir: '/Users/zhangst/.openclaw/agents/Ai-StockAssistant/sessions/',
+    priority: 'medium',
+    stopThreshold: 60, // 1 小时
+  },
+};
+
+/**
+ * 主监控函数
+ */
+async function runMonitoring() {
+  console.log('\n' + '='.repeat(50));
+  console.log('  🗿 Stone 监控');
+  console.log('='.repeat(50));
+  console.log(`  时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`);
+  console.log('='.repeat(50));
+
+  const report = {
+    timestamp: new Date().toISOString(),
+    agents: {},
+  };
+
+  for (const [agentId, config] of Object.entries(AGENTS)) {
+    const status = await checkAgent(agentId, config);
+    report.agents[agentId] = status;
+  }
+
+  // 更新 AGENT-STATES.md
+  await updateAgentStates(report);
+
+  // 记录到 MONITOR-LOG.md
+  await logToMonitorLog(report);
+
+  // 生成报告
+  generateReport(report);
+
+  // 检查是否需要干预
+  const interventions = detectInterventions(report);
+
+  if (interventions.length > 0) {
+    console.log('\n' + '='.repeat(50));
+    console.log('  🚨 检测到需要干预的情况');
+    console.log('='.repeat(50));
+
+    for (const intervention of interventions) {
+      console.log(`\n  📌 ${intervention.agent}: ${intervention.reason}`);
+      console.log(`  📋 建议: ${intervention.suggestion}`);
+
+      // 执行干预（新功能：高优先级自动执行，低优先级只记录）
+      if (intervention.priority === 'high') {
+        console.log(`  🔄 执行自动干预...`);
+        await executeIntervention(intervention);
+      } else {
+        console.log(`  📝 记录干预（低优先级，等待用户确认）`);
+        await recordIntervention(intervention);
+      }
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+  console.log('  ✅ 监控完成');
+  console.log('='.repeat(50));
+}
+
+/**
+ * 检查 Agent 状态（完整逻辑：综合 main session + subagents）
+ */
+async function checkAgent(agentId, config) {
+  console.log(`\n  📊 检查 ${agentId}...`);
+
+  // 第 1 步：读取 main session
+  const mainSessionStatus = await checkMainSession(agentId, config);
+
+  // 第 2 步：检查 subagents
+  const subagentsStatus = await checkSubagents(agentId);
+
+  // 第 3 步：综合状态（优先级：active > recent > 历史 > main）
+  const finalStatus = await mergeStatus(agentId, mainSessionStatus, subagentsStatus, config);
+
+  console.log(`  📈 综合状态: ${finalStatus.status} (${finalStatus.message})`);
+
+  return finalStatus;
+}
+
+/**
+ * 检查 main session 状态
+ */
+async function checkMainSession(agentId, config) {
+  console.log(`  🔍 检查 main session...`);
+
+  // 读取 session 文件（使用更安全的方式）
+  const sessionFilesResult = await exec(`ls -1t ${config.sessionDir}/*.jsonl 2>/dev/null | head -3`);
+  const sessionFiles = sessionFilesResult.stdout.trim();
+  const hasSessions = sessionFiles.includes('.jsonl');
+
+  if (!hasSessions) {
+    return {
+      type: 'main',
+      status: 'unknown',
+      lastActivity: null,
+      message: 'No session files',
+      hasAbort: false,
+    };
+  }
+
+  // 读取最新 session 的最后 50 行
+  const latestFile = sessionFiles.split('\n')[0];
+  const tailOutputResult = await exec(`tail -50 ${latestFile}`);
+  const tailOutput = tailOutputResult.stdout.trim();
+  const lines = tailOutput.split('\n');
+
+  // 提取最后消息时间
+  const lastMessage = findLastMessage(lines);
+  const lastActivity = lastMessage ? new Date(lastMessage.timestamp) : null;
+
+  // 计算停滞时间
+  const now = new Date();
+  const stopDuration = lastActivity ? Math.floor((now - lastActivity) / 60000) : null; // 分钟
+
+  // 判断状态
+  let status = 'unknown';
+  let message = '';
+
+  if (!lastActivity) {
+    status = 'unknown';
+    message = 'No valid messages';
+  } else if (stopDuration === null) {
+    status = 'unknown';
+    message = 'Cannot calculate stop duration';
+  } else if (stopDuration < config.stopThreshold) {
+    status = 'normal';
+    message = `Last activity ${stopDuration} min ago`;
+  } else {
+    status = 'stopped';
+    message = `Stopped for ${stopDuration} min (threshold: ${config.stopThreshold})`;
+  }
+
+  // 检查 abort（修复：正确解析 JSON）
+  const hasAbort = checkAbortInSession(lines);
+  if (hasAbort && status === 'stopped') {
+    status = 'aborted';
+    message += ', aborted';
+  }
+
+  console.log(`  📊 Main session: ${status}`);
+
+  return {
+    type: 'main',
+    status,
+    lastActivity,
+    stopDuration,
+    message,
+    hasAbort,
+    lines, // 保存 lines 用于后续分析
+  };
+}
+
+/**
+ * 检查 subagents 状态（从 session 文件系统读取）
+ */
+async function checkSubagents(agentId) {
+  console.log(`  🔍 检查 subagents...`);
+
+  try {
+    const sessionDir = `/Users/zhangst/.openclaw/agents/${agentId}/sessions/`;
+
+    // 列出所有 session 文件（可能包含 subagent）
+    const result = await exec(`ls -1t ${sessionDir}*.jsonl 2>/dev/null`);
+    const sessionFiles = result.stdout.trim().split('\n').filter(f => f.includes('.jsonl') && !f.includes('.deleted') && !f.includes('.lock'));
+
+    if (sessionFiles.length === 0) {
+      console.log(`  📊 Subagents: total=0, active=0, recent=0`);
+      return { total: 0, active: [], recent: [], all: [] };
+    }
+
+    const agentSubagents = {
+      total: sessionFiles.length,
+      active: [],
+      recent: [],
+      all: [],
+    };
+
+    const now = new Date();
+
+    // 分析每个 session 文件，识别是否是 subagent
+    for (const sessionFile of sessionFiles) {
+      try {
+        // 读取文件名提取 session key
+        const fileName = sessionFile.split('/').pop();
+        const sessionKey = fileName.replace('.jsonl', '');
+
+        // 判断是否是 subagent（根据 session key 的格式）
+        // subagent 的 session key 格式通常包含特定标记
+        const isSubagent = sessionKey.includes('subagent') ||
+                          sessionKey.includes('wakeup') ||
+                          sessionKey.includes('diagnose') ||
+                          sessionKey.includes('test');
+
+        if (!isSubagent) {
+          continue; // 跳过非 subagent 的 session
+        }
+
+        agentSubagents.total++;
+
+        // 读取最后 20 行
+        const tailResult = await exec(`tail -20 ${sessionFile}`);
+        const lines = tailResult.stdout.trim().split('\n');
+
+        // 查找最后一条消息的时间戳
+        let lastTimestamp = null;
+        let isCompleted = false;
+
+        for (let i = lines.length - 1; i >= 0; i--) {
+          try {
+            const msg = JSON.parse(lines[i]);
+            if (msg.timestamp) {
+              lastTimestamp = msg.timestamp;
+              break;
+            }
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+
+        // 检查是否已完成（查看文件中是否有完成标记）
+        const fileContent = tailResult.stdout;
+        isCompleted = fileContent.includes('completed') ||
+                       fileContent.includes('finished') ||
+                       fileContent.includes('done') ||
+                       fileContent.includes('✅');
+
+        if (!isCompleted) {
+          // 没有完成标记，认为是 active
+          agentSubagents.active.push({
+            sessionKey,
+            fileName,
+            lastTimestamp,
+            isCompleted: false,
+          });
+        } else if (lastTimestamp) {
+          const lastDate = new Date(lastTimestamp);
+          const minutesAgo = (now - lastDate) / 60000;
+
+          if (minutesAgo <= 30) {
+            // 最近 30 分钟内完成的
+            agentSubagents.recent.push({
+              sessionKey,
+              fileName,
+              lastTimestamp,
+              completedAt: lastTimestamp,
+              isCompleted: true,
+            });
+          }
+
+          agentSubagents.all.push({
+            sessionKey,
+            fileName,
+            lastTimestamp,
+            completedAt: lastTimestamp,
+            isCompleted: true,
+          });
+        }
+      } catch (e) {
+        console.log(`  ⚠️ 无法分析 session 文件 ${sessionFile}: ${e.message}`);
+      }
+    }
+
+    console.log(`  📊 Subagents: total=${agentSubagents.total}, active=${agentSubagents.active.length}, recent=${agentSubagents.recent.length}`);
+
+    return agentSubagents;
+  } catch (e) {
+    console.log(`  ⚠️ 无法获取 ${agentId} 的 subagents: ${e.message}`);
+    return { total: 0, active: [], recent: [], all: [] };
+  }
+}
+
+/**
+ * 综合状态（优先级：active > recent > 历史 > main）
+ */
+async function mergeStatus(agentId, mainStatus, subagentsStatus, config) {
+  // 优先级 1: active subagents
+  if (subagentsStatus.active.length > 0) {
+    const activeSubagent = subagentsStatus.active[0];
+    return {
+      agentId,
+      status: 'subagent-running',
+      lastActivity: new Date(),
+      stopDuration: 0,
+      message: `🟡 Subagent 执行中: ${activeSubagent.label || activeSubagent.sessionKey}`,
+      hasAbort: false,
+      subagentCount: subagentsStatus.active.length,
+      statusSource: 'active-subagent',
+      subagentInfo: activeSubagent,
+    };
+  }
+
+  // 优先级 2: recent subagents（最近 30 分钟内完成的）
+  if (subagentsStatus.recent.length > 0) {
+    const recentSubagent = subagentsStatus.recent[0];
+    const completedAt = recentSubagent.completedAt || new Date().toISOString();
+    const lastActivity = new Date(completedAt);
+    const stopDuration = Math.floor((new Date() - lastActivity) / 60000);
+
+    return {
+      agentId,
+      status: 'subagent-completed',
+      lastActivity,
+      stopDuration,
+      message: `🟢 Subagent 已完成: ${recentSubagent.label || recentSubagent.sessionKey}`,
+      hasAbort: false,
+      subagentCount: subagentsStatus.recent.length,
+      statusSource: 'recent-subagent',
+      subagentInfo: recentSubagent,
+    };
+  }
+
+  // 优先级 3: 历史记录（从 MONITOR-LOG.md 读取）
+  const historySubagent = await findHistorySubagent(agentId);
+  if (historySubagent) {
+    return {
+      agentId,
+      status: 'subagent-completed',
+      lastActivity: new Date(historySubagent.completedAt),
+      stopDuration: Math.floor((new Date() - new Date(historySubagent.completedAt)) / 60000),
+      message: `🟢 Subagent 已完成: ${historySubagent.label || '历史记录'}`,
+      hasAbort: false,
+      subagentCount: 1,
+      statusSource: 'history-subagent',
+      subagentInfo: historySubagent,
+    };
+  }
+
+  // 优先级 4: 使用 main session 的状态
+  return {
+    agentId,
+    status: mainStatus.status,
+    lastActivity: mainStatus.lastActivity,
+    stopDuration: mainStatus.stopDuration,
+    message: mainStatus.message,
+    hasAbort: mainStatus.hasAbort,
+    subagentCount: 0,
+    statusSource: 'main-session',
+  };
+}
+
+/**
+ * 从 MONITOR-LOG.md 读取历史 subagents 记录
+ */
+async function findHistorySubagent(agentId) {
+  try {
+    const monitorLog = await read(MONITOR_LOG, 'utf8');
+
+    // 查找该 agent 的 subagent 记录
+    const agentRegex = new RegExp(`### ${agentId}\\n[\\s\\S]*?`, 'g');
+    const matches = monitorLog.matchAll(agentRegex);
+
+    for (const match of matches) {
+      const section = match[0];
+      // 查找 "Subagent" 相关的内容
+      if (section.includes('Subagent')) {
+        // 提取时间戳（在 ## 标题中）
+        const timestampMatch = section.match(/## ([\d\-T:.]+)/);
+        if (timestampMatch) {
+          return {
+            completedAt: timestampMatch[1],
+            label: '历史记录',
+            source: 'MONITOR-LOG.md',
+          };
+        }
+      }
+    }
+
+    return null;
+  } catch (e) {
+    console.log(`  ⚠️ 无法读取 MONITOR-LOG.md: ${e.message}`);
+    return null;
+  }
+}
+
+/**
+ * 检查 session 中是否有 abort（修复：正确解析 JSON）
+ */
+function checkAbortInSession(lines) {
+  for (const line of lines) {
+    try {
+      const msg = JSON.parse(line);
+      // 检查 message content 中的 abort
+      const content = msg.message?.content || msg.message?.message || '';
+      if (content.includes('aborted') || content.includes('abort')) {
+        return true;
+      }
+    } catch (e) {
+      // 忽略解析错误
+    }
+  }
+  return false;
+}
+
+/**
+ * 查找最后消息
+ */
+function findLastMessage(lines) {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const msg = JSON.parse(lines[i]);
+      if (msg.type === 'message' && msg.message) {
+        return {
+          timestamp: msg.timestamp,
+          role: msg.message.role,
+          content: msg.message.message || msg.message.content,
+        };
+      }
+    } catch (e) {
+      // 忽略解析错误
+    }
+  }
+  return null;
+}
+
+/**
+ * 更新 AGENT-STATES.md（使用综合后的状态）
+ */
+async function updateAgentStates(report) {
+  const content = `# AGENT-STATES.md - Agent 状态监控
+
+## 状态总览 (${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })})
+
+| Agent | 状态 | 最后活动 | 停滞时长 | 说明 | Subagents |
+|-------|------|---------|---------|------|-----------|
+${Object.entries(report.agents).map(([id, s]) =>
+  `| ${id} | ${getStatusEmoji(s.status)} ${s.status} | ${s.lastActivity || '-'} | ${s.stopDuration || '-'} | ${s.message || '-'} | ${s.subagentCount || 0} |`
+).join('\n')}
+
+## 详细状态
+
+${Object.entries(report.agents).map(([id, s]) =>
+  `### ${id}
+- **状态**: ${s.status}
+- **最后活动**: ${s.lastActivity || '-'}
+- **停滞时长**: ${s.stopDuration || '-'}
+- **说明**: ${s.message || '-'}
+- **Abort**: ${s.hasAbort ? '是' : '否'}
+- **Subagents**: ${s.subagentCount || 0}
+- **状态来源**: ${s.statusSource || 'main-session'}
+${s.subagentInfo ? `- **Subagent 信息**:\n  - Session Key: ${s.subagentInfo.sessionKey || s.subagentInfo.id || 'N/A'}\n  - Label: ${s.subagentInfo.label || 'N/A'}` : ''}
+`
+).join('\n')}
+
+---
+
+生成时间: ${report.timestamp}
+`
+;
+
+  await write(AGENT_STATES, content);
+  console.log('  ✅ AGENT-STATES.md 已更新');
+}
+
+/**
+ * 记录到 MONITOR-LOG.md（添加 subagents 信息）
+ */
+async function logToMonitorLog(report) {
+  const logEntry = `
+## ${new Date().toISOString()}
+
+${Object.entries(report.agents).map(([id, s]) =>
+  `### ${id}
+- 状态: ${s.status}
+- 最后活动: ${s.lastActivity || '-'}
+- 停滞: ${s.stopDuration || '-'}
+- 说明: ${s.message || '-'}
+- Abort: ${s.hasAbort ? '是' : '否'}
+- Subagents: ${s.subagentCount || 0}
+- 状态来源: ${s.statusSource || 'main-session'}
+${s.subagentInfo ? `- Subagent 信息:\n  - Session Key: ${s.subagentInfo.sessionKey || s.subagentInfo.id || 'N/A'}\n  - Label: ${s.subagentInfo.label || 'N/A'}` : ''}
+`
+).join('\n')}
+`;
+
+  let existingLog = '';
+  try {
+    existingLog = await read(MONITOR_LOG, 'utf8');
+  } catch (e) {
+    // 文件不存在
+  }
+
+  const newLog = logEntry + '\n' + existingLog;
+  await write(MONITOR_LOG, newLog);
+  console.log('  ✅ MONITOR-LOG.md 已更新');
+}
+
+/**
+ * 生成报告（显示综合后的状态）
+ */
+function generateReport(report) {
+  console.log('\n' + '='.repeat(50));
+  console.log('  📊 监控报告');
+  console.log('='.repeat(50));
+
+  for (const [agentId, status] of Object.entries(report.agents)) {
+    const emoji = getStatusEmoji(status.status);
+    console.log(`\n  ${emoji} ${agentId}`);
+    console.log(`  状态: ${status.status}`);
+    console.log(`  最后活动: ${status.lastActivity || '-'}`);
+    console.log(`  停滞: ${status.stopDuration || '-'} 分钟`);
+    console.log(`  说明: ${status.message || '-'}`);
+    console.log(`  Subagents: ${status.subagentCount || 0}`);
+    console.log(`  状态来源: ${status.statusSource || 'main-session'}`);
+    if (status.subagentInfo) {
+      console.log(`  Subagent Key: ${status.subagentInfo.sessionKey || status.subagentInfo.id || 'N/A'}`);
+    }
+  }
+
+  console.log('\n' + '='.repeat(50));
+}
+
+/**
+ * 检测需要干预的情况（考虑 subagent 状态）
+ */
+function detectInterventions(report) {
+  const interventions = [];
+
+  for (const [agentId, status] of Object.entries(report.agents)) {
+    // 只在 main session aborted 时触发干预（subagent aborted 不会触发）
+    if (status.status === 'aborted' && AGENTS[agentId].priority === 'high' && status.statusSource === 'main-session') {
+      interventions.push({
+        agent: agentId,
+        reason: `Agent 已 abort，停滞 ${status.stopDuration} 分钟（main session）`,
+        suggestion: '重新唤醒 Agent，继续执行未完成的任务',
+        priority: 'high',
+      });
+    } else if (status.status === 'stopped' && status.stopDuration > AGENTS[agentId].stopThreshold * 2) {
+      // 只在 main session stopped 时触发干预（subagent-completed 不会触发）
+      if (status.statusSource === 'main-session') {
+        interventions.push({
+          agent: agentId,
+          reason: `Agent 停滞超过阈值 2 倍 (${status.stopDuration} 分钟)`,
+          suggestion: '检查 Agent 是否正常运行，或重新唤醒',
+          priority: 'medium',
+        });
+      }
+    }
+  }
+
+  return interventions;
+}
+
+/**
+ * 记录干预
+ */
+async function recordIntervention(intervention) {
+  const alertDir = WORKSPACE + '/alerts';
+  await exec(`mkdir -p ${alertDir}`);
+
+  const alertFile = `${alertDir}/${intervention.agent}-${Date.now()}.json`;
+  const content = JSON.stringify(intervention, null, 2);
+
+  await write(alertFile, content);
+  console.log(`  ✅ 干预已记录: ${alertFile}`);
+}
+
+/**
+ * 执行自动干预（session + thread 模式）
+ */
+async function executeIntervention(intervention) {
+  const { agent, reason, suggestion } = intervention;
+
+  console.log(`\n  🔄 [session+thread] 唤醒 ${agent}...`);
+
+  try {
+    // 记录干预到文件
+    await recordIntervention(intervention);
+
+    // 🔧 使用 ContextBuilder 构建增强的任务 prompt
+    console.log(`  📝 构建增强的任务 prompt (包含历史上下文)...`);
+
+    // 初始化 ContextBuilder
+    const contextBuilder = global.ContextBuilder ? new global.ContextBuilder() : null;
+
+    // 构建基础任务
+    const baseTask = `${suggestion}\n\n任务时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`;
+
+    // 如果有 ContextBuilder，构建增强的任务
+    const task = contextBuilder
+      ? await contextBuilder.buildTaskPrompt(agent, baseTask)
+      : baseTask;
+
+    if (contextBuilder) {
+      console.log(`  ✅ 增强任务长度: ${task.length} 字符`);
+    } else {
+      console.log(`  ⚠️ ContextBuilder 未加载，使用基础任务`);
+    }
+
+    // 生成唤醒命令（通过 curl 调用 Gateway HTTP API）
+    const gatewayToken = '6026dcc4ffe9663a47656f60f08c0f77561b31a5ca0133a9';
+    const apiUrl = 'http://127.0.0.1:18789/v1/sessions/spawn';
+
+    const requestBody = {
+      agentId: agent,
+      task: task,  // ✅ 使用增强的任务（包含历史上下文）
+      mode: 'session',  // ✅ 持久化 session 模式
+      thread: true,     // ✅ 绑定到当前 thread
+      label: `stone-wakeup-${agent}`,  // 固定 label
+      runTimeoutSeconds: 1800,  // 30 分钟
+    };
+
+    console.log(`  📤 发送唤醒请求...`);
+    console.log(`  📋 任务长度: ${task.length} 字符`);
+
+    // 调用 Gateway HTTP API
+    const curlCmd = `curl -s -X POST "${apiUrl}" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer ${gatewayToken}" \
+      -d '${JSON.stringify(requestBody)}' \
+      --max-time 300`;
+
+    const curlOutputResult = await exec(curlCmd);
+
+    try {
+      const response = JSON.parse(curlOutputResult.stdout.trim());
+
+      if (response.childSessionKey) {
+        console.log(`  ✅ Agent 已唤醒: ${response.childSessionKey}`);
+        console.log(`  📝 Session 已持久化，将自动捕获完成报告`);
+
+        // 记录 session 映射
+        await recordSessionMapping(agent, response.childSessionKey);
+
+        return { success: true, sessionKey: response.childSessionKey };
+      } else {
+        console.log(`  ❌ 唤醒失败: ${JSON.stringify(response)}`);
+        return { success: false, error: 'Invalid response' };
+      }
+    } catch (parseError) {
+      console.log(`  ⚠️ 响应解析失败: ${curlOutput.substring(0, 200)}`);
+      return { success: false, error: 'Parse error' };
+    }
+
+  } catch (error) {
+    console.log(`  ❌ 执行干预失败: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 记录 session 映射
+ */
+async function recordSessionMapping(agentId, sessionKey) {
+  const sessionsFile = WORKSPACE + '/AGENT-SESSIONS.md';
+
+  let existingContent = '';
+  try {
+    existingContent = await read(sessionsFile, 'utf8');
+  } catch (e) {
+    // 文件不存在，创建新文件
+  }
+
+  const timestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  const newEntry = `
+### ${agentId}
+- **Session Key**: ${sessionKey}
+- **Thread Bound**: Yes
+- **Created**: ${timestamp}
+- **Status**: Active
+- **Purpose**: Stone 自动唤醒（session + thread 模式）
+`;
+
+  // 检查是否已有该 agent 的条目
+  const agentRegex = new RegExp(`### ${agentId}\\n[\\s\\S]*?(?=\\n### |$)`, 'g');
+  const match = agentRegex.exec(existingContent);
+
+  if (match) {
+    // 更新现有条目
+    existingContent = existingContent.replace(match[0], newEntry);
+  } else {
+    // 添加新条目
+    existingContent += newEntry;
+  }
+
+  await write(sessionsFile, existingContent);
+  console.log(`  ✅ Session 映射已记录`);
+}
+
+/**
+ * 获取状态 emoji
+ */
+function getStatusEmoji(status) {
+  const emojis = {
+    normal: '🟢',
+    stopped: '🟡',
+    aborted: '🔴',
+    unknown: '⚪',
+    'subagent-running': '🟡',
+    'subagent-completed': '🟢',
+  };
+  return emojis[status] || '⚪';
+}
+
+// 主入口
+runMonitoring().catch((error) => {
+  console.error('\n❌ 监控失败:', error);
+  process.exit(1);
+});

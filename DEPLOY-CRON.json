@@ -1,0 +1,36 @@
+{
+  "cron": {
+    "stone-monitor": {
+      "schedule": "*/30 * * * *",
+      "message": "运行监控",
+      "targetAgent": "stone"
+    }
+  },
+  "agents": {
+    "stone": {
+      "id": "stone",
+      "description": "Business Partner Agent - 专业的业务合作伙伴",
+      "model": "zai/glm-4.7",
+      "runtime": "subagent",
+      "workspace": "/Volumes/zhangstExtern/openclaw/workspace/stone",
+      "memory": "~/.openclaw/workspace/custom/memory/daily/",
+      "tools": {
+        "sessions_list": true,
+        "sessions_spawn": true,
+        "sessions_send": true,
+        "sessions_history": true,
+        "message": true,
+        "memory_search": true,
+        "memory_get": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "exec": true
+      },
+      "monitoring": {
+        "interval": 30,
+        "intervalUnit": "minutes"
+      }
+    }
+  }
+}

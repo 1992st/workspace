@@ -1,0 +1,39 @@
+{
+  "taskId": "task-20260303T02593-3wa",
+  "title": "诊断 RTSP 连接问题",
+  "description": "诊断 RTSP 连接问题",
+  "agentId": "ffmedia",
+  "priority": "high",
+  "status": "pending",
+  "createdAt": "2026-03-03T02:59:37.284Z",
+  "updatedAt": "2026-03-03T02:59:37.284Z",
+  "conflictResolution": "pause-main",
+  "steps": [
+    {
+      "stepId": "001",
+      "title": "步骤 1",
+      "description": "第一步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null
+    },
+    {
+      "stepId": "002",
+      "title": "步骤 2",
+      "description": "第二步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null
+    }
+  ],
+  "context": {
+    "mainGoal": "未指定",
+    "currentMainStatus": "未知"
+  },
+  "result": null,
+  "summary": null
+}

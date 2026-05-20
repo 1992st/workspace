@@ -1,0 +1,41 @@
+{
+  "taskId": "task-20260303T03321-4i0",
+  "title": "测试任务 - 检查系统状态",
+  "description": "测试任务 - 检查系统状态",
+  "agentId": "stone",
+  "priority": "medium",
+  "status": "pending",
+  "createdAt": "2026-03-03T03:32:17.270Z",
+  "updatedAt": "2026-03-03T03:32:17.270Z",
+  "conflictResolution": "pause-others",
+  "steps": [
+    {
+      "stepId": "001",
+      "title": "步骤 1",
+      "description": "第一步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null,
+      "continueOnError": false
+    },
+    {
+      "stepId": "002",
+      "title": "步骤 2",
+      "description": "第二步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null,
+      "continueOnError": false
+    }
+  ],
+  "context": {
+    "mainGoal": "未指定",
+    "currentMainStatus": "未知"
+  },
+  "result": null,
+  "summary": null
+}

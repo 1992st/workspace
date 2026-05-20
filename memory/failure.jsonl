@@ -1,0 +1,3 @@
+{"id":"1772458043476-b3z9l9d","agentId":"ffmedia","type":"failure","failure":"eth0 无 IP 地址，udhcpc 无法获取 DHCP","priority":"medium","timestamp":1772458043476,"created":"2026-03-02T13:27:23.476Z"}
+{"id":"1772458044021-ucw7ke4","agentId":"ffmedia","type":"failure","failure":"手动配置 IP 后仍无法连接 RTSP 服务器","priority":"medium","timestamp":1772458044021,"created":"2026-03-02T13:27:24.021Z"}
+{"id":"1772760284923-39m2ikm","agentId":"ffmedia","type":"failure","failure":"eth0 无 IP 地址，udhcpc 无法获取 DHCP","priority":"medium","timestamp":1772760284923,"created":"2026-03-06T01:24:44.923Z"}

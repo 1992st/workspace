@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-03-27T20:24:00.000Z",
+  "agents": {
+    "ffmedia": {
+      "agentId": "ffmedia",
+      "status": "stopped",
+      "lastActivity": "2026-03-04T04:11:40.521Z",
+      "stopDuration": 33323,
+      "message": "Stopped for 33323 min (threshold: 10) - device offline, requires physical intervention",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "agentmesh": {
+      "agentId": "agentmesh",
+      "status": "stopped",
+      "lastActivity": "2026-03-03T12:16:08.224Z",
+      "stopDuration": 33317,
+      "message": "Stopped for 33317 min (threshold: 1440) - compilation test passed, waiting for deployment (no task, not tracked)",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "Ai-StockAssistant": {
+      "agentId": "Ai-StockAssistant",
+      "status": "completed",
+      "lastActivity": "2026-03-27T07:31:00.000Z",
+      "stopDuration": null,
+      "message": "Completed - Friday all monitoring tasks completed (pre-market 09:20, intraday 09:25-15:00, post-market 15:30). Post-market analysis encountered data source issues (easyquotation/AkShare connection failures, LLM API authentication failure), ran in degraded mode. Market status: Friday 20:24 (closed, weekend). Next monitoring: Monday 09:20 pre-market.",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "embeddedclaw": {
+      "agentId": "embeddedclaw",
+      "status": "pending",
+      "lastActivity": null,
+      "stopDuration": null,
+      "message": "New task - waiting for platform info to be filled in before starting",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    }
+  },
+  "gatewayStatus": "running",
+  "subagentsTotal": 0,
+  "subagentsActive": 0,
+  "subagentsRecent": 0,
+  "changesDetected": false,
+  "changesDescription": "No substantive changes compared to 19:54 monitoring. Ai-StockAssistant status stable (completed all Friday tasks). Data API issue stable (reported at 10:24). Other agents stable. Only stop duration increased by 30 minutes (natural time progression).",
+  "messageSent": false,
+  "messageReason": "No intervention needed. Ai-StockAssistant completed all Friday monitoring tasks. Data API issue already reported at 10:24, status stable. Weekend market closure, next monitoring Monday 09:20. No substantive changes compared to 19:54. Intelligent silence: no need to send message for routine monitoring or completed tasks."
+}

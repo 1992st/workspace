@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "totalTasks": 3,
+  "activeTasks": 3,
+  "completedTasks": 0,
+  "failedTasks": 0,
+  "tasks": {
+    "task-20260303T02593-3wa": {
+      "taskId": "task-20260303T02593-3wa",
+      "title": "诊断 RTSP 连接问题",
+      "agentId": "ffmedia",
+      "status": "pending",
+      "createdAt": "2026-03-03T02:59:37.284Z",
+      "updatedAt": "2026-03-03T02:59:37.284Z",
+      "priority": "high"
+    },
+    "task-20260303T03013-wy7": {
+      "taskId": "task-20260303T03013-wy7",
+      "title": "检查上周预测结果",
+      "agentId": "Ai-StockAssistant",
+      "status": "pending",
+      "createdAt": "2026-03-03T03:01:30.148Z",
+      "updatedAt": "2026-03-03T03:01:30.148Z",
+      "priority": "medium"
+    },
+    "task-20260303T03321-4i0": {
+      "taskId": "task-20260303T03321-4i0",
+      "title": "测试任务 - 检查系统状态",
+      "agentId": "stone",
+      "status": "pending",
+      "createdAt": "2026-03-03T03:32:17.270Z",
+      "updatedAt": "2026-03-03T03:32:17.270Z",
+      "priority": "medium"
+    }
+  },
+  "byAgent": {
+    "ffmedia": {
+      "total": 1,
+      "active": 1,
+      "completed": 0,
+      "failed": 0
+    },
+    "Ai-StockAssistant": {
+      "total": 1,
+      "active": 1,
+      "completed": 0,
+      "failed": 0
+    },
+    "stone": {
+      "total": 1,
+      "active": 1,
+      "completed": 0,
+      "failed": 0,
+      "paused": 0
+    }
+  },
+  "lastUpdated": "2026-03-03T03:32:17.272Z"
+}

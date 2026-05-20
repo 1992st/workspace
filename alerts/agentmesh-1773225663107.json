@@ -1,0 +1,6 @@
+{
+  "agent": "agentmesh",
+  "reason": "Agent 停滞超过阈值 2 倍 (11424 分钟)",
+  "suggestion": "检查 Agent 是否正常运行，或重新唤醒",
+  "priority": "medium"
+}

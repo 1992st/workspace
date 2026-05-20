@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-03-02T16:50:00.000Z",
+  "agentId": "ffmedia",
+  "agentKey": "agent:ffmedia:main",
+  "runId": "dc6d4a4a-9b86-4ffc-81ce-07e9e1b5c55a",
+  "sessionKey": "agent:ffmedia:subagent:f9086d15-9657-49e4-b9af-1b53582fb777",
+  "previousSession": "c52e3477-a7eb-4fcd-8ee5-37c7680cdf59.jsonl",
+  "interventionType": "abort-recovery",
+  "retryCount": 1,
+  "maxRetries": 3,
+  "triggerReason": "User reported agent aborted",
+  "actionTaken": "sessions_spawn with recovery task",
+  "taskDescription": "继续执行 RTSP 多路拼接调试任务。当前问题：demo_rtsp_multi_splice 运行后只有 1 路 RTSP 连接成功（cam1），其他 3 路失败（4XX Client Error），ADB 反向端口转发可能不支持并发多连接。下一步：分析 RTSP 连接失败的根本原因，测试单路拼接是否正常，如果是 ADB 转发限制，考虑调整测试方案",
+  "priority": "high",
+  "status": "executed",
+  "expectedResult": "ffmedia restarts and continues debugging",
+  "nextCheckTime": "2026-03-02T17:00:00.000Z"
+}

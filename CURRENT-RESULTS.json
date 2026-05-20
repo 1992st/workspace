@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-03-06T10:42:00.000Z",
+  "agents": {
+    "ffmedia": {
+      "agentId": "ffmedia",
+      "status": "stopped",
+      "lastActivity": "2026-03-04T04:11:00.000Z",
+      "stopDuration": 3270,
+      "message": "Stopped for 3270 min (threshold: 60)",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "agentmesh": {
+      "agentId": "agentmesh",
+      "status": "stopped",
+      "lastActivity": "2026-03-03T12:16:00.000Z",
+      "stopDuration": 4226,
+      "message": "Stopped for 4226 min (threshold: 1440)",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "Ai-StockAssistant": {
+      "agentId": "Ai-StockAssistant",
+      "status": "stopped",
+      "lastActivity": "2026-03-03T11:45:00.000Z",
+      "stopDuration": 4257,
+      "message": "Stopped for 4257 min (threshold: 1440)",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "main-session"
+    },
+    "embeddedclaw": {
+      "agentId": "embeddedclaw",
+      "status": "new",
+      "lastActivity": null,
+      "stopDuration": 0,
+      "message": "New task, pending start",
+      "hasAbort": false,
+      "subagentCount": 0,
+      "statusSource": "config"
+    }
+  }
+}

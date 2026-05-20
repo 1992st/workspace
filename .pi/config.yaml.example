@@ -1,0 +1,35 @@
+# 抖音分析配置文件（模板）
+
+# TikHub API 配置
+tikhub:
+  api_key: "your_tikhub_api_key_here"  # 从 https://tikhub.io 获取
+  base_url: "https://api.tikhub.io"
+
+# OpenClaw API 配置
+openclaw:
+  api_url: "http://127.0.0.1:18789/v1/responses"
+  api_token: "your_openclaw_token_here"  # 从 ~/.openclaw/openclaw.json 获取
+
+# 搜索配置
+search:
+  default_keyword: "热门"
+  default_count: 10
+  max_videos: 5  # 每次最多分析的视频数
+
+# 输出配置
+output:
+  save_to_file: true
+  file_path: "/Volumes/zhangstExtern/openclaw/workspace/stone/.pi/results.json"
+  send_to_feishu: false  # 是否发送到飞书群
+  feishu_chat_id: "chat:oc_5347fa823df2385fe75516285e7c215b"
+
+# 分析配置
+analysis:
+  style: "concise"  # concise | detailed
+  topics_count: 3  # 生成的话题标签数量
+  suggestions_count: 3  # 改进建议数量
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+  file: "/Volumes/zhangstExtern/openclaw/workspace/stone/.pi/analyzer.log"

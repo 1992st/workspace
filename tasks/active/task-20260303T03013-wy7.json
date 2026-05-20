@@ -1,0 +1,39 @@
+{
+  "taskId": "task-20260303T03013-wy7",
+  "title": "检查上周预测结果",
+  "description": "检查上周预测结果",
+  "agentId": "Ai-StockAssistant",
+  "priority": "medium",
+  "status": "pending",
+  "createdAt": "2026-03-03T03:01:30.148Z",
+  "updatedAt": "2026-03-03T03:01:30.148Z",
+  "conflictResolution": "pause-main",
+  "steps": [
+    {
+      "stepId": "001",
+      "title": "步骤 1",
+      "description": "第一步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null
+    },
+    {
+      "stepId": "002",
+      "title": "步骤 2",
+      "description": "第二步",
+      "command": null,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "subagent": null
+    }
+  ],
+  "context": {
+    "mainGoal": "未指定",
+    "currentMainStatus": "未知"
+  },
+  "result": null,
+  "summary": null
+}

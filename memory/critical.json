@@ -1,0 +1,29 @@
+[
+  {
+    "id": "1772458043475-zh323fc",
+    "agentId": "ffmedia",
+    "type": "critical_decision",
+    "decision": "使用端口 9997 作为 RTSP 输出端口",
+    "priority": "high",
+    "timestamp": 1772458043475,
+    "created": "2026-03-02T13:27:23.475Z"
+  },
+  {
+    "id": "1772760284918-xdioboh",
+    "agentId": "ffmedia",
+    "type": "critical_decision",
+    "decision": "使用端口 9997 作为 RTSP 输出端口",
+    "priority": "high",
+    "timestamp": 1772760284918,
+    "created": "2026-03-06T01:24:44.918Z"
+  },
+  {
+    "id": "1772760284922-8s92axn",
+    "agentId": "ffmedia",
+    "type": "critical_decision",
+    "decision": "使用 /live/test 作为 RTSP 输出路径",
+    "priority": "high",
+    "timestamp": 1772760284922,
+    "created": "2026-03-06T01:24:44.922Z"
+  }
+]
