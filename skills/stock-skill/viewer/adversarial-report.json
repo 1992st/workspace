@@ -1,0 +1,14 @@
+{
+  "status": "pass",
+  "summary": "Capabilities are data domain categories matching the 21 actions. Each has action count evidence. Two flows cover runtime execution and analysis pipeline. All 9 sections justified.",
+  "blocking_findings": [],
+  "non_blocking_findings": [],
+  "checked_dimensions": [
+    "capability-vs-flow",
+    "trigger-vs-feature",
+    "section-overreach",
+    "evidence-gaps",
+    "tuning-value",
+    "layout-mismatch"
+  ]
+}

@@ -20,6 +20,20 @@
 - **状态**: 已完成阅读提炼，未进入正式运行时策略
 - **说明**: 当前结论以方法候选和体系修正建议为主，后续应结合更多复盘验证后再决定是否进入 `strategy/registry.json`
 
+## 核心阅读队列
+
+- **入口**: `books/_reading_queue/README.md`
+- **合法获取目录**: `books/_reading_queue/acquisition/catalog.md`
+- **提炼计划**: `books/_reading_queue/extraction_plan.md`
+- **当前优先级**:
+  1. `Trading and Exchanges`：市场微结构、盘口、流动性
+  2. `Evidence-Based Technical Analysis`：技术信号验证
+  3. `The Art of Execution`：执行、止损、仓位和错误处理
+  4. `Expected Returns`：风险溢价与收益来源
+  5. `Thinking, Fast and Slow`：行为偏误与对抗审查
+
+说明：阅读队列只登记合法入口和提炼任务，不保存盗版材料。成熟方法先归档、再回放验证，最后才进入运行时策略。
+
 ## 收录标准
 - 经典投资/交易书籍
 - 有明确可执行的原则
@@ -41,6 +55,11 @@
 | 《量价分析》/《因子投资》 | 待稳定 | ⏳ 暂未合并 | 待定 |
 
 ## 待收录
+- [ ] `Trading and Exchanges` - 市场微结构与流动性
+- [ ] `Evidence-Based Technical Analysis` - 技术信号验证
+- [ ] `The Art of Execution` - 执行与仓位管理
+- [ ] `Expected Returns` - 风险溢价与收益来源
+- [ ] `Thinking, Fast and Slow` - 认知偏误与审查
 - [ ] 《聪明的投资者》(The Intelligent Investor) - 预计贡献 R021-R040
 - [ ] 《证券分析》(Security Analysis) - 预计贡献 R041-R060
 - [ ] 《日本蜡烛图技术》(Japanese Candlestick Charting Techniques)

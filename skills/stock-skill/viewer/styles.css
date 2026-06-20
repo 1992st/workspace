@@ -1,0 +1,873 @@
+:root {
+  --bg: #edf1f4;
+  --panel: #ffffff;
+  --ink: #17202a;
+  --muted: #65717f;
+  --line: #d7dee6;
+  --blue: #1d4ed8;
+  --green: #047857;
+  --amber: #b45309;
+  --red: #b91c1c;
+  --soft-blue: #e8f0ff;
+  --soft-green: #e5f6ee;
+  --shadow: 0 12px 28px rgba(23, 32, 42, 0.08);
+}
+
+/* Base layout: the viewer is intentionally static-file friendly. All panels
+   must work when index.html is opened through file:// without a dev server. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "SF Pro Display", "PingFang SC", "Noto Sans SC", sans-serif;
+  background: linear-gradient(180deg, #f6f8fb 0%, var(--bg) 100%);
+  color: var(--ink);
+}
+
+.topbar,
+.statusbar,
+.overview,
+.layout {
+  width: min(1640px, calc(100vw - 32px));
+  margin: 0 auto;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.subtitle {
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+
+.topbar-actions,
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+button:hover:enabled {
+  border-color: var(--blue);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.statusbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.statusbar div,
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  border-radius: 8px;
+}
+
+.statusbar div {
+  padding: 11px 12px;
+  color: var(--muted);
+}
+
+.overview {
+  min-height: unset;
+  margin-bottom: 14px;
+}
+
+.overview h2 {
+  margin: 0 0 8px;
+}
+
+.overview p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.overview-grid div,
+.info-block,
+.detail-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.overview-grid ul,
+.info-block ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.overview-grid li,
+.info-block li {
+  margin: 4px 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(620px, 1fr) 440px;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+.panel {
+  padding: 16px;
+  min-height: 72vh;
+}
+
+.panel h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+/* Section-driven layout: the analyzer decides which regions matter for a
+   specific skill. Hidden sections must fully collapse so generic viewer chrome
+   does not imply capabilities the target skill does not have. */
+.sidebar-section,
+.content-section {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-section + .sidebar-section,
+.content-section + .content-section {
+  margin-top: 22px;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.flow-nav,
+.feature-nav,
+.nested-list,
+.quality-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.flow-button {
+  text-align: left;
+  width: 100%;
+}
+
+.flow-button.is-active {
+  color: var(--blue);
+  background: var(--soft-blue);
+  border-color: var(--blue);
+  font-weight: 700;
+}
+
+.quality-item {
+  border-left: 4px solid var(--line);
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.quality-item.error {
+  border-color: var(--red);
+}
+
+.quality-item.warning {
+  border-color: var(--amber);
+}
+
+.quality-item.info {
+  border-color: var(--blue);
+}
+
+.quality-item.usage-risk {
+  background: #fff5f5;
+  color: #7f1d1d;
+}
+
+.quality-group-title {
+  margin: 2px 0 2px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.quality-group-title.usage-risk-group {
+  color: var(--red);
+}
+
+.quality-group-title.structural-group {
+  color: var(--blue);
+}
+
+.flow-canvas {
+  display: grid;
+  gap: 18px;
+}
+
+.capability-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.feature-card {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #fff7ed, #fffdf7 42%, #f8fafc 100%);
+  border-width: 1px;
+}
+
+.feature-card.is-active {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.14);
+}
+
+.feature-card.has-risk {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.16);
+}
+
+.feature-card-label,
+.capability-hero-label {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.feature-card-label {
+  color: var(--amber);
+  background: #fff1d6;
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.feature-card-meta {
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.feature-risk-banner {
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fef2f2;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  max-width: 100%;
+}
+
+.text-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: #f8fafc;
+  color: var(--ink);
+  font-size: clamp(12px, 1.4vw, 14px);
+  line-height: 1.35;
+  max-width: min(100%, 520px);
+  overflow-wrap: anywhere;
+}
+
+.text-chip.is-muted {
+  color: var(--muted);
+}
+
+.capability-summary {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* Capability summary is now a lightweight guide block. The main execution
+   narrative lives in the flow canvas, while this panel explains why the
+   selected capability matters and what it unlocks. */
+.capability-hero {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: linear-gradient(160deg, #fffef2, #f9fafb 45%, #f8fafc 100%);
+  display: grid;
+  gap: 10px;
+}
+
+.capability-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.capability-hero h2 {
+  margin: 0 0 8px;
+}
+
+.capability-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.capability-hero-label {
+  color: var(--amber);
+  background: #fff1d6;
+  margin-bottom: 8px;
+}
+
+.finding-block {
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff5f5;
+}
+
+.finding-block ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.finding-block li {
+  margin: 6px 0;
+  color: #7f1d1d;
+}
+
+.finding-code {
+  display: inline-block;
+  margin-right: 8px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: #fee2e2;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mindmap {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.mindmap-node {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.mindmap-node.center {
+  background: var(--blue);
+  color: #ffffff;
+  text-align: center;
+  place-items: center;
+  font-weight: 800;
+  min-height: 100%;
+}
+
+.mindmap-node span {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.mindmap-node em {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--soft-blue);
+  color: var(--blue);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mindmap-branch {
+  border-left: 4px solid var(--line);
+  padding-left: 8px;
+  display: grid;
+  gap: 8px;
+  position: relative;
+}
+
+.mindmap-branch.kind-prompt {
+  border-color: var(--green);
+}
+
+.mindmap-branch.kind-script {
+  border-color: #334155;
+}
+
+.mindmap-branch.kind-config,
+.mindmap-branch.kind-template {
+  border-color: var(--amber);
+}
+
+.mindmap-branch.kind-blocker {
+  border-color: var(--red);
+}
+
+.mindmap-branches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.branch-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  border-radius: 14px;
+  background: #fff7ed;
+}
+
+.branch-card span {
+  color: var(--amber);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.branch-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Skill tree: a compact folder view built from model.files. Related files get a
+   soft highlight when a feature is selected; the currently opened file receives
+   a stronger highlight. */
+.file-tree {
+  margin-bottom: 22px;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfdff;
+  padding: 8px;
+}
+
+.tree-root {
+  display: grid;
+  gap: 2px;
+}
+
+.tree-node-wrap {
+  display: grid;
+  gap: 2px;
+}
+
+.tree-node {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 5px 8px 5px calc(8px + var(--depth) * 14px);
+  text-align: left;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tree-node.directory {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tree-node.file {
+  color: var(--muted);
+}
+
+.tree-node.file.is-related {
+  background: #fffbeb;
+  color: var(--ink);
+}
+
+.tree-node.file.is-current {
+  background: var(--soft-blue);
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.tree-kind {
+  border-radius: 999px;
+  background: #eef2f7;
+  padding: 1px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.nested-item {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  background: #f8fafc;
+}
+
+.nested-item span,
+.nested-item small {
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.flow-hero {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 10px 24px rgba(23, 32, 42, 0.06);
+}
+
+.flow-hero h2 {
+  margin: 0 0 8px;
+}
+
+.flow-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.flow-hero-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.flow-context-chip {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+  background: #eff6ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.flow-hero-callout {
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, #eef2ff, #f8fafc);
+}
+
+.flow-hero-callout p {
+  margin-top: 6px;
+}
+
+.flow-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tag-block {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline-tag {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #e8f0ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.step-track {
+  display: grid;
+  gap: 14px;
+}
+
+.flow-step {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+}
+
+.flow-step:hover {
+  border-color: var(--line);
+  box-shadow: 0 8px 18px rgba(23, 32, 42, 0.05);
+}
+
+.flow-step.kind-decide {
+  background: linear-gradient(180deg, #fff9eb, #ffffff);
+}
+
+.flow-step.kind-verify {
+  background: linear-gradient(180deg, #f0fdfa, #ffffff);
+}
+
+.step-rail {
+  display: grid;
+  justify-items: center;
+  grid-template-rows: 42px 1fr;
+  gap: 8px;
+}
+
+.step-index {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--blue);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(29, 78, 216, 0.18);
+}
+
+.step-connector {
+  width: 4px;
+  min-height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #dbeafe, #cbd5e1);
+}
+
+.flow-step.is-last .step-connector {
+  visibility: hidden;
+}
+
+.flow-step.kind-decide .step-index {
+  background: var(--amber);
+  box-shadow: 0 8px 16px rgba(180, 83, 9, 0.18);
+}
+
+.flow-step.kind-edit .step-index {
+  background: var(--green);
+  box-shadow: 0 8px 16px rgba(4, 120, 87, 0.18);
+}
+
+.flow-step.kind-run .step-index {
+  background: #334155;
+  box-shadow: 0 8px 16px rgba(51, 65, 85, 0.2);
+}
+
+.flow-step.kind-verify .step-index {
+  background: #0f766e;
+  box-shadow: 0 8px 16px rgba(15, 118, 110, 0.18);
+}
+
+.flow-step.kind-report .step-index {
+  background: #7c3aed;
+  box-shadow: 0 8px 16px rgba(124, 58, 237, 0.18);
+}
+
+.step-body {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  display: grid;
+  gap: 10px;
+}
+
+.step-kicker {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.step-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.step-description {
+  color: var(--muted);
+  margin: 8px 0 12px;
+}
+
+.step-lists {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.step-assets {
+  display: grid;
+  gap: 8px;
+}
+
+.asset-chip {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  background: #f8fafc;
+}
+
+.asset-chip.kind-prompt {
+  background: var(--soft-green);
+  border-color: var(--green);
+}
+
+.asset-kind {
+  width: fit-content;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.asset-path {
+  color: var(--muted);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.file-meta {
+  white-space: pre-wrap;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.flow-detail {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.flow-detail p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.editor,
+.preview {
+  width: 100%;
+  min-height: 58vh;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  font: 13px/1.55 "SFMono-Regular", Menlo, Consolas, monospace;
+  background: #fbfdff;
+  white-space: pre-wrap;
+}
+
+.editor {
+  display: none;
+  resize: vertical;
+}
+
+.editor.is-active {
+  display: block;
+}
+
+.preview.is-hidden {
+  display: none;
+}
+
+@media (max-width: 1220px) {
+  .layout {
+    grid-template-columns: 260px 1fr;
+  }
+
+  .detail {
+    grid-column: 1 / -1;
+  }
+
+  .flow-hero-header,
+  .flow-hero-grid,
+  .capability-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 840px) {
+  .topbar,
+  .statusbar,
+  .overview-grid,
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .mindmap {
+    grid-template-columns: 1fr;
+  }
+}

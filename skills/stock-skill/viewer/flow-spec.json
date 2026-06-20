@@ -1,0 +1,740 @@
+{
+  "_classification_note__design_first": "stock-skill 是 Win_Stock 的统一 A 股数据接口层，不是 prompt 驱动的对话 skill，而是以 Python 运行时为核心的脚本驱动 skill。它提供 21 个结构化 action + 分析资源注入 + 分析结果校验。能力按数据领域分层：行情、资金、新闻、基本面、深度分析。每个 action 有统一输出契约（status/data/meta/quality/error）。降级和缓存由运行时透明处理。",
+  "summary": {
+    "responsibility": "为 Agent 提供统一、可缓存、可降级、可追溯的 A 股数据接口。统一契约封装上游数据源，先服务分析链路，不暴露上游细节。",
+    "when_to_use": [
+      "需要获取 A 股个股实时行情或批量行情",
+      "需要获取个股 K 线/指数/交易日历",
+      "需要分析主力资金流向或大单成交统计",
+      "需要查看个股或市场新闻",
+      "需要查询融资融券余额、沪股通活跃股、龙虎榜、大宗交易",
+      "需要查看板块地图与热度",
+      "需要个股基本面估值和关键指标",
+      "需要分析准备（数据收集 + 策略注入 + 知识注入）",
+      "需要校验分析结果是否真实引用注入策略"
+    ],
+    "when_not_to_use": [
+      "不需要 A 股数据或港股/美股等其他市场的行情",
+      "需要实时逐笔交易明细（当前未提供）",
+      "需要财务三表手工录入或修改（当前只读查询）"
+    ],
+    "core_outputs": [
+      "quote.get — 个股实时行情（主/备源自动降级）",
+      "kline.get — 日K/周K/月K/分钟K",
+      "analysis.stock.prepare — 数据整合 + 策略注入 + 知识注入",
+      "analysis.result.validate — 分析结果策略引用校验"
+    ],
+    "boundaries": [
+      "不保证盘前盘后数据返回频率一致",
+      "高阶接口（margin.balance/hsgt.top10/lhb/block_trade）按盘后口径使用",
+      "etf.pcf 是申购赎回清单，非实时净申赎结果",
+      "不包含浏览器降级编排（由 skills/stock-data/ 处理）",
+      "缓存命中会标注 cache=true，不伪装实时数据"
+    ]
+  },
+  "analysis": {
+    "responsibility": "为 Agent 提供统一、可缓存、可降级、可追溯的 A 股数据接口。",
+    "shape": "script-pipeline",
+    "complexity": "complex",
+    "has_features": true,
+    "has_nested_skills": false,
+    "needs_issue_book": true,
+    "needs_feedback": true
+  },
+  "viewer_design_rationale": {
+    "summary": "stock-skill 是一个运行时插件型 skill。21 个 action 按数据领域分为 5 个能力（行情/资金/新闻/基本面/分析）。每个能力列出其 action 清单。两大执行流程覆盖运行时调用和准备-校验分析管线。资源关联图展示 prompts/knowledge/scripts/skill_runtime 文件结构。",
+    "section_selection_reasoning": [
+      "overview：skill 定位和适用边界",
+      "trigger-list：无 frontmatter triggers，展示 description 中的触发线索",
+      "feature-map：5 个数据领域能力，summary-only",
+      "mindmap：资源关联（prompts/knowledge/scripts/runtime 等）",
+      "flow-timeline：运行时调用流程 + 分析管线流程",
+      "file-tree：完整的目录结构",
+      "quality-findings：质量检查",
+      "issue-book：已知边界和限制",
+      "feedback：特征请求"
+    ],
+    "display_templates_used": []
+  },
+  "adversarial_review": {
+    "status": "pass",
+    "summary": "Capabilities are data domain categories matching the 21 actions. Each has action count evidence. Two flows cover runtime execution and analysis pipeline. All 9 sections justified.",
+    "blocking_findings": [],
+    "non_blocking_findings": [],
+    "checked_dimensions": [
+      "capability-vs-flow",
+      "trigger-vs-feature",
+      "section-overreach",
+      "evidence-gaps",
+      "tuning-value",
+      "layout-mismatch"
+    ]
+  },
+  "sections": [
+    {
+      "type": "overview",
+      "title": "Stock Skill 概览",
+      "description": "统一的 A 股数据接口层。"
+    },
+    {
+      "type": "trigger-list",
+      "title": "适用线索",
+      "description": "description 中的触发关键词。"
+    },
+    {
+      "type": "feature-map",
+      "title": "数据能力",
+      "description": "五个数据领域能力。Summary-only。"
+    },
+    {
+      "type": "mindmap",
+      "title": "资源关联",
+      "description": "prompts/knowledge/scripts/runtime 资源图。"
+    },
+    {
+      "type": "flow-timeline",
+      "title": "执行流程",
+      "description": "运行时调用和分析管线流程。"
+    },
+    {
+      "type": "file-tree",
+      "title": "文件树",
+      "description": "完整的技能目录结构。"
+    },
+    {
+      "type": "quality-findings",
+      "title": "质量检查",
+      "description": "结构评估结果。"
+    },
+    {
+      "type": "issue-book",
+      "title": "已知边界",
+      "description": "接口使用的边界约束。"
+    },
+    {
+      "type": "feedback",
+      "title": "反馈",
+      "description": "改进方向。"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "market-quotes",
+      "title": "行情数据",
+      "description": "个股实时行情、批量行情、K 线、指数、交易日历、市场快照。支持主源（akshare）自动降级到 HTTP 备源。",
+      "trigger_groups": [],
+      "inputs": [
+        "symbol（股票代码）",
+        "market（市场标识）",
+        "start_date / end_date",
+        "period / adjust"
+      ],
+      "outputs": [
+        "报价数据（price/volume/turnover/change）",
+        "K 线 OHLCV 序列",
+        "指数成分与涨跌"
+      ],
+      "files": [
+        "scripts/run.py",
+        "skill_runtime/stock_skill.py",
+        "skill_runtime/providers/akshare_provider.py",
+        "skill_runtime/providers/http_provider.py"
+      ],
+      "flows": [
+        "runtime-call"
+      ],
+      "tuning_points": [
+        {
+          "title": "TTL 缓存时间",
+          "description": "各 action 的 TTL_MAP 可调整",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        },
+        {
+          "title": "数据源优先级",
+          "description": "主源降级逻辑可调",
+          "files": [
+            "skill_runtime/providers/akshare_provider.py",
+            "skill_runtime/providers/http_provider.py"
+          ]
+        }
+      ],
+      "mindmap": [
+        {
+          "id": "mq-stock",
+          "label": "stock_skill.py",
+          "type": "script",
+          "description": "quote.get / quotes.batch.get / kline.get / index.get / trading.calendar.get / market.snapshot.get",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        },
+        {
+          "id": "mq-akshare",
+          "label": "akshare_provider.py",
+          "type": "script",
+          "description": "主数据源提供者",
+          "files": [
+            "skill_runtime/providers/akshare_provider.py"
+          ]
+        },
+        {
+          "id": "mq-http",
+          "label": "http_provider.py",
+          "type": "script",
+          "description": "HTTP 备源提供者",
+          "files": [
+            "skill_runtime/providers/http_provider.py"
+          ]
+        },
+        {
+          "id": "mq-cache",
+          "label": "cache.py",
+          "type": "script",
+          "description": "文件缓存层，TTL 控制",
+          "files": [
+            "skill_runtime/shared/cache.py"
+          ]
+        },
+        {
+          "id": "mq-health",
+          "label": "health.py",
+          "type": "script",
+          "description": "健康追踪",
+          "files": [
+            "skill_runtime/shared/health.py"
+          ]
+        },
+        {
+          "id": "mq-run",
+          "label": "run.py",
+          "type": "script",
+          "description": "CLI 运行时入口",
+          "files": [
+            "scripts/run.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "capital-flow",
+      "title": "资金流向",
+      "description": "主力资金流向、大单成交统计、融资融券余额、沪股通活跃股、龙虎榜、大宗交易。所有高阶资金接口按盘后口径使用。",
+      "trigger_groups": [],
+      "inputs": [
+        "symbol",
+        "market",
+        "date",
+        "start_date / end_date"
+      ],
+      "outputs": [
+        "资金流向统计（main/retail）",
+        "订单规模分布（order_size）",
+        "两融余额",
+        "北向资金活跃股",
+        "龙虎榜明细",
+        "大宗交易记录"
+      ],
+      "files": [
+        "skill_runtime/stock_skill.py",
+        "skill_runtime/providers/akshare_provider.py"
+      ],
+      "flows": [
+        "runtime-call"
+      ],
+      "tuning_points": [
+        {
+          "title": "盘后接口处理",
+          "description": "previous_trading_day_only 标记逻辑可调",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        }
+      ],
+      "mindmap": [
+        {
+          "id": "cf-stock",
+          "label": "stock_skill.py",
+          "type": "script",
+          "description": "flow.main.get / flow.order_size.get / margin.balance.get / hsgt.top10.get / lhb.detail.get / block_trade.get / etf.pcf.get",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        },
+        {
+          "id": "cf-cache",
+          "label": "cache.py",
+          "type": "script",
+          "description": "高阶接口 12h TTL",
+          "files": [
+            "skill_runtime/shared/cache.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "news-alerts",
+      "title": "新闻与公告",
+      "description": "个股新闻、市场资讯。按 TTL 1800s/900s 缓存，命中标记 cache=true。",
+      "trigger_groups": [],
+      "inputs": [
+        "symbol",
+        "market",
+        "date"
+      ],
+      "outputs": [
+        "新闻标题/时间/来源/摘要"
+      ],
+      "files": [
+        "skill_runtime/stock_skill.py",
+        "skill_runtime/providers/http_provider.py"
+      ],
+      "flows": [
+        "runtime-call"
+      ],
+      "tuning_points": [],
+      "mindmap": [
+        {
+          "id": "na-stock",
+          "label": "stock_skill.py",
+          "type": "script",
+          "description": "news.stock.get / news.market.get",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        },
+        {
+          "id": "na-http",
+          "label": "http_provider.py",
+          "type": "script",
+          "description": "新闻数据源",
+          "files": [
+            "skill_runtime/providers/http_provider.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fundamentals",
+      "title": "基本面",
+      "description": "个股估值指标、关键财务指标、板块地图、板块热度。按 24h TTL 缓存（86400s）。",
+      "trigger_groups": [],
+      "inputs": [
+        "symbol",
+        "date",
+        "sector_type"
+      ],
+      "outputs": [
+        "估值数据（PE/PB/PS）",
+        "财务指标（ROE/ROA/营收增长）",
+        "板块分类概述",
+        "板块涨跌热度"
+      ],
+      "files": [
+        "skill_runtime/stock_skill.py",
+        "skill_runtime/providers/akshare_provider.py"
+      ],
+      "flows": [
+        "runtime-call"
+      ],
+      "tuning_points": [
+        {
+          "title": "基本面周期",
+          "description": "季度/年度更新频率可调",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        }
+      ],
+      "mindmap": [
+        {
+          "id": "fd-stock",
+          "label": "stock_skill.py",
+          "type": "script",
+          "description": "fundamental.valuation.get / fundamental.metrics.get / sector.map.get / sector.heat.get",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deep-analysis",
+      "title": "深度分析",
+      "description": "分析准备管线：整合行情/资金/新闻数据 + 注入 book 策略 + 加载知识资源 + 输出分析上下文。分析校验：检查 LLM 输出是否真实引用注入策略。",
+      "trigger_groups": [],
+      "inputs": [
+        "symbol",
+        "period",
+        "book version",
+        "analysis type"
+      ],
+      "outputs": [
+        "analysis context（数据 + 质量 + 工具异常 + prompt + 策略包 + 知识入口）",
+        "validation result（策略引用正确性）"
+      ],
+      "files": [
+        "skill_runtime/analysis_engine.py",
+        "skill_runtime/analysis_resources.py",
+        "skill_runtime/analysis_validation.py",
+        "resources/prompts/v1/master.md",
+        "resources/prompts/v1/stock-analysis.md",
+        "resources/knowledge/v1/data-quality-guidelines.md",
+        "resources/knowledge/v1/short-swing-playbook.md"
+      ],
+      "flows": [
+        "runtime-call",
+        "analysis-pipeline"
+      ],
+      "tuning_points": [
+        {
+          "title": "分析 prompt 模板",
+          "description": "master.md 和 stock-analysis.md 可微调",
+          "files": [
+            "resources/prompts/v1/master.md",
+            "resources/prompts/v1/stock-analysis.md"
+          ]
+        },
+        {
+          "title": "校验规则",
+          "description": "validate_analysis_result() 的策略匹配逻辑",
+          "files": [
+            "skill_runtime/analysis_validation.py"
+          ]
+        }
+      ],
+      "mindmap": [
+        {
+          "id": "da-engine",
+          "label": "analysis_engine.py",
+          "type": "script",
+          "description": "analysis.stock.prepare：整合数据 + 策略 + 知识",
+          "files": [
+            "skill_runtime/analysis_engine.py"
+          ]
+        },
+        {
+          "id": "da-resources",
+          "label": "analysis_resources.py",
+          "type": "script",
+          "description": "资源加载器：动态读取 prompt 和知识文件",
+          "files": [
+            "skill_runtime/analysis_resources.py"
+          ]
+        },
+        {
+          "id": "da-validation",
+          "label": "analysis_validation.py",
+          "type": "script",
+          "description": "analysis.result.validate：验证策略引用",
+          "files": [
+            "skill_runtime/analysis_validation.py"
+          ]
+        },
+        {
+          "id": "da-prompt-master",
+          "label": "master.md",
+          "type": "prompt",
+          "description": "分析主控 prompt",
+          "files": [
+            "resources/prompts/v1/master.md"
+          ]
+        },
+        {
+          "id": "da-prompt-analysis",
+          "label": "stock-analysis.md",
+          "type": "prompt",
+          "description": "个股分析 prompt",
+          "files": [
+            "resources/prompts/v1/stock-analysis.md"
+          ]
+        },
+        {
+          "id": "da-knowledge-quality",
+          "label": "data-quality-guidelines.md",
+          "type": "reference",
+          "description": "数据质量标准",
+          "files": [
+            "resources/knowledge/v1/data-quality-guidelines.md"
+          ]
+        },
+        {
+          "id": "da-knowledge-playbook",
+          "label": "short-swing-playbook.md",
+          "type": "reference",
+          "description": "短线波段策略包",
+          "files": [
+            "resources/knowledge/v1/short-swing-playbook.md"
+          ]
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "runtime-call",
+      "title": "运行时 Action 调用",
+      "description": "通过 run.py CLI 入口调用任意 action：quote.get / kline.get / flow.main.get / analysis.stock.prepare 等。自动处理降级、缓存、异常记录。",
+      "intent": "统一的数据查询入口，调用者只需指定 skill/action/input。",
+      "trigger": "手动调用 run.py 或由 Agent 编排触发。",
+      "inputs": [
+        "技能名（stock）",
+        "action 名",
+        "JSON input 参数"
+      ],
+      "outputs": [
+        "{status, data, meta, quality, error}"
+      ],
+      "decision_points": [
+        "主源（akshare）失败 → HTTP 备源兜底",
+        "双源均失败 → 返回缓存数据（标注 cache=true）",
+        "同时记录失败到 tool_failures/ 日志"
+      ],
+      "blockers": [
+        "非交易日部分非缓存在接口可能返回空"
+      ],
+      "tuning_points": [
+        {
+          "title": "TTL 调整",
+          "description": "各 action 缓存 TTL 可独立调优",
+          "files": [
+            "skill_runtime/stock_skill.py"
+          ]
+        },
+        {
+          "title": "降级策略",
+          "description": "主/备源优先级和切换条件",
+          "files": [
+            "skill_runtime/providers/__init__.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "parse-input",
+          "title": "解析输入",
+          "description": "解析 action 名称和 JSON input 参数。",
+          "kind": "read",
+          "evidence": [
+            "scripts/run.py"
+          ],
+          "files": [
+            "scripts/run.py"
+          ]
+        },
+        {
+          "id": "check-cache",
+          "title": "检查缓存",
+          "description": "根据 TTL 从 FileCache 检查是否存在有效缓存。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/shared/cache.py"
+          ],
+          "files": [
+            "skill_runtime/shared/cache.py"
+          ]
+        },
+        {
+          "id": "call-primary",
+          "title": "调用主数据源",
+          "description": "优先使用 akshare 获取数据。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/providers/akshare_provider.py"
+          ],
+          "files": [
+            "skill_runtime/providers/akshare_provider.py"
+          ]
+        },
+        {
+          "id": "fallback-on-fail",
+          "title": "主源失败 → 降级",
+          "description": "主源异常时自动切 HTTP 备源。双源全失败则返回缓存。",
+          "kind": "decide",
+          "evidence": [
+            "skill_runtime/stock_skill.py",
+            "skill_runtime/providers/http_provider.py"
+          ],
+          "files": [
+            "skill_runtime/stock_skill.py",
+            "skill_runtime/providers/http_provider.py"
+          ]
+        },
+        {
+          "id": "record-failure",
+          "title": "记录工具异常",
+          "description": "降级发生时记录失败日志到 runtime_data/tool_failures/。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/shared/failure_log.py"
+          ],
+          "files": [
+            "skill_runtime/shared/failure_log.py"
+          ]
+        },
+        {
+          "id": "quality-annotate",
+          "title": "标注质量元数据",
+          "description": "返回 status/data/meta/quality/error 契约，标注数据来源、缓存状态、时间戳。",
+          "kind": "report",
+          "evidence": [
+            "skill_runtime/shared/contracts.py"
+          ],
+          "files": [
+            "skill_runtime/shared/contracts.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "analysis-pipeline",
+      "title": "分析准备与校验",
+      "description": "analysis.stock.prepare 整合所有数据 + 策略 + 知识，analysis.result.validate 校验 LLM 输出是否真实引用注入策略。",
+      "intent": "确保分析基于足够的数据和正确的策略，避免空口分析。",
+      "trigger": "上层 Agent 调用 analysis.stock.prepare。",
+      "inputs": [
+        "symbol",
+        "book version",
+        "analysis type"
+      ],
+      "outputs": [
+        "compiled analysis context",
+        "策略引用验证报告"
+      ],
+      "decision_points": [
+        "数据不充分时标记 quality 状态，允许降级分析等级",
+        "LLM 输出未引用注入策略 → validation 标注 FAIL"
+      ],
+      "blockers": [
+        "资源文件缺失 → analysis_resources 返回空",
+        "book 版本不存在 → 回退默认"
+      ],
+      "tuning_points": [
+        {
+          "title": "分析 prompt 调整",
+          "description": "master.md 和 stock-analysis.md 可微调",
+          "files": [
+            "resources/prompts/v1/master.md",
+            "resources/prompts/v1/stock-analysis.md"
+          ]
+        },
+        {
+          "title": "校验严格度",
+          "description": "validate_analysis_result() 策略 ID 匹配逻辑",
+          "files": [
+            "skill_runtime/analysis_validation.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "load-context",
+          "title": "加载分析上下文",
+          "description": "analysis_engine.py 整合行情/资金/新闻/基本面数据。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/analysis_engine.py"
+          ],
+          "files": [
+            "skill_runtime/analysis_engine.py"
+          ]
+        },
+        {
+          "id": "inject-strategies",
+          "title": "注入 book 策略",
+          "description": "加载策略包至 compiled context。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/analysis_engine.py"
+          ],
+          "files": [
+            "skill_runtime/analysis_engine.py"
+          ]
+        },
+        {
+          "id": "load-resources",
+          "title": "加载知识资源",
+          "description": "AnalysisResourceLoader 读取 prompts/ 和 knowledge/ 下的资源。",
+          "kind": "run",
+          "evidence": [
+            "skill_runtime/analysis_resources.py"
+          ],
+          "files": [
+            "skill_runtime/analysis_resources.py"
+          ]
+        },
+        {
+          "id": "compile-prompt",
+          "title": "编译分析 prompt",
+          "description": "输出 compiled_prompt 供上#层 Agent 使用。",
+          "kind": "report",
+          "evidence": [
+            "skill_runtime/analysis_engine.py"
+          ],
+          "files": [
+            "skill_runtime/analysis_engine.py"
+          ]
+        },
+        {
+          "id": "validate-result",
+          "title": "校验分析结果",
+          "description": "analysis.result.validate 检查 LLM 输出是否引用注入策略 ID。",
+          "kind": "verify",
+          "evidence": [
+            "skill_runtime/analysis_validation.py"
+          ],
+          "files": [
+            "skill_runtime/analysis_validation.py"
+          ]
+        }
+      ]
+    }
+  ],
+  "issue_book": [
+    {
+      "id": "no-frontmatter-triggers",
+      "title": "无 frontmatter triggers",
+      "description": "SKILL.md 未声明 triggers 字段，Agent 路由依赖 description 关键词匹配。",
+      "status": "open"
+    },
+    {
+      "id": "no-fallback-browser",
+      "title": "浏览器降级不在本技能",
+      "description": "browser 兜底由 skills/stock-data/ 统一编排。",
+      "status": "open"
+    },
+    {
+      "id": "etf-pcf-limit",
+      "title": "ETF PCF 非实时净申赎",
+      "description": "etf.pcf 是盘前申购赎回清单，不反映盘中实时申赎。",
+      "status": "open"
+    },
+    {
+      "id": "margin-staleness",
+      "title": "融资融券余额滞后",
+      "description": "margin.balance.get 按盘后口径使用，盘中返回上一个交易日。",
+      "status": "open"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "realtime-tick",
+      "title": "逐笔交易明细",
+      "description": "提供实时逐笔成交数据。",
+      "status": "feature-request"
+    },
+    {
+      "id": "stock-pool",
+      "title": "自选股池管理",
+      "description": "个性化股票池和持仓管理。",
+      "status": "feature-request"
+    },
+    {
+      "id": "realtime-notification",
+      "title": "异动提醒",
+      "description": "价格/成交量突变时的实时推送。",
+      "status": "feature-request"
+    }
+  ]
+}

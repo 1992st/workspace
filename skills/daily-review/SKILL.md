@@ -23,6 +23,12 @@ version: 2.0
 - 记录该股的操盘风格、消息敏感度、技术特征
 - 长期积累，形成对个股的深度理解
 
+**4. 大盘/板块预测也必须复盘**
+- 读取 `data/market/predictions/index.jsonl` 和 `data/sectors/predictions/index.jsonl`
+- 验证 Vibe-Trading 大盘/板块预测方向、支撑压力、触发/失效条件
+- 复盘结果写入 `data/market/reviews/`、`data/sectors/reviews/`
+- 若预测为 blocked，也要记录数据缺口是否已修复
+
 ## 复盘流程
 
 ```

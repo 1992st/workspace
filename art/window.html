@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Window</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --night: #07111b;
+      --deep: #0b1b28;
+      --glass: rgba(168, 207, 220, 0.16);
+      --glass-line: rgba(199, 229, 236, 0.42);
+      --lamp: #f2d18a;
+      --lamp-soft: rgba(242, 209, 138, 0.22);
+      --screen: #7fd9c7;
+      --screen-soft: rgba(127, 217, 199, 0.24);
+      --ink: #17202a;
+      --paper: #c8d2ce;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 52% 40%, rgba(30, 71, 88, 0.44), transparent 34%),
+        linear-gradient(180deg, #03070c 0%, var(--night) 47%, #10151b 100%);
+      display: grid;
+      place-items: center;
+      font-family: ui-serif, Georgia, "Times New Roman", serif;
+    }
+
+    .frame {
+      position: relative;
+      width: min(92vw, 1180px);
+      height: min(82vh, 760px);
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 72px 72px,
+        linear-gradient(180deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 72px 72px,
+        linear-gradient(180deg, #102030 0%, #0b1621 60%, #0b0e13 100%);
+      border: 1px solid rgba(223, 238, 240, 0.18);
+      box-shadow:
+        0 42px 90px rgba(0, 0, 0, 0.56),
+        inset 0 0 0 10px rgba(255, 255, 255, 0.026);
+    }
+
+    .window {
+      position: absolute;
+      left: 9%;
+      top: 8%;
+      width: 54%;
+      height: 52%;
+      border: 9px solid #162431;
+      background:
+        radial-gradient(circle at 72% 24%, rgba(255, 239, 183, 0.9) 0 3px, transparent 4px),
+        radial-gradient(circle at 16% 16%, rgba(206, 230, 238, 0.92) 0 1px, transparent 2px),
+        radial-gradient(circle at 38% 28%, rgba(206, 230, 238, 0.7) 0 1px, transparent 2px),
+        radial-gradient(circle at 82% 62%, rgba(206, 230, 238, 0.68) 0 1px, transparent 2px),
+        linear-gradient(180deg, #081421 0%, #0e2233 55%, #152a38 100%);
+      box-shadow:
+        inset 0 0 45px rgba(255, 255, 255, 0.06),
+        0 20px 50px rgba(0, 0, 0, 0.36);
+    }
+
+    .window::before,
+    .window::after {
+      content: "";
+      position: absolute;
+      background: var(--glass-line);
+      opacity: 0.55;
+    }
+
+    .window::before {
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 100%;
+    }
+
+    .window::after {
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 2px;
+    }
+
+    .glass-mark {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(116deg, transparent 0 38%, var(--glass) 39% 42%, transparent 43% 100%),
+        linear-gradient(121deg, transparent 0 68%, rgba(255,255,255,0.1) 69% 70%, transparent 71% 100%);
+      pointer-events: none;
+    }
+
+    .table {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 28%;
+      background:
+        linear-gradient(180deg, #2a211b 0%, #17100d 100%);
+      box-shadow: inset 0 18px 24px rgba(255, 255, 255, 0.035);
+    }
+
+    .screen {
+      position: absolute;
+      left: 52%;
+      bottom: 22%;
+      width: 28%;
+      height: 26%;
+      border: 8px solid #101820;
+      background:
+        linear-gradient(180deg, rgba(127, 217, 199, 0.2), rgba(127, 217, 199, 0.05)),
+        repeating-linear-gradient(180deg, transparent 0 10px, rgba(127, 217, 199, 0.08) 11px 12px),
+        #071a1e;
+      box-shadow:
+        0 0 50px var(--screen-soft),
+        inset 0 0 26px rgba(127, 217, 199, 0.18);
+    }
+
+    .chart {
+      position: absolute;
+      inset: 20% 10% 22% 10%;
+    }
+
+    .chart span {
+      position: absolute;
+      bottom: 0;
+      width: 7%;
+      background: var(--screen);
+      opacity: 0.72;
+      box-shadow: 0 0 10px var(--screen-soft);
+    }
+
+    .chart span:nth-child(1) { left: 0%; height: 28%; }
+    .chart span:nth-child(2) { left: 13%; height: 46%; }
+    .chart span:nth-child(3) { left: 26%; height: 34%; }
+    .chart span:nth-child(4) { left: 39%; height: 70%; }
+    .chart span:nth-child(5) { left: 52%; height: 55%; }
+    .chart span:nth-child(6) { left: 65%; height: 82%; }
+    .chart span:nth-child(7) { left: 78%; height: 62%; }
+    .chart span:nth-child(8) { left: 91%; height: 88%; }
+
+    .lamp {
+      position: absolute;
+      right: 11%;
+      bottom: 28%;
+      width: 18%;
+      height: 30%;
+    }
+
+    .lamp::before {
+      content: "";
+      position: absolute;
+      left: 27%;
+      top: 0;
+      width: 46%;
+      height: 32%;
+      background: linear-gradient(180deg, #f5d994, #b77b3b);
+      clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%);
+      box-shadow: 0 0 70px 18px var(--lamp-soft);
+    }
+
+    .lamp::after {
+      content: "";
+      position: absolute;
+      left: 47%;
+      top: 31%;
+      width: 6%;
+      height: 46%;
+      background: #51351d;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .lamp-base {
+      position: absolute;
+      left: 31%;
+      bottom: 0;
+      width: 38%;
+      height: 8%;
+      background: #5a3a20;
+      border-radius: 50% 50% 0 0;
+    }
+
+    .paper {
+      position: absolute;
+      left: 13%;
+      bottom: 12%;
+      width: 29%;
+      height: 18%;
+      background: linear-gradient(150deg, #d9ded7, var(--paper));
+      transform: rotate(-4deg);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .paper::before {
+      content: "";
+      position: absolute;
+      inset: 18% 12%;
+      background:
+        linear-gradient(var(--ink), var(--ink)) 0 0 / 68% 1px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) 0 28% / 85% 1px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) 0 56% / 58% 1px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) 0 84% / 74% 1px no-repeat;
+      opacity: 0.55;
+    }
+
+    .cup {
+      position: absolute;
+      left: 44%;
+      bottom: 13%;
+      width: 6%;
+      aspect-ratio: 1 / 1.05;
+      background: linear-gradient(90deg, #24323a, #40515a 45%, #18232a);
+      border-radius: 0 0 18px 18px;
+      box-shadow: inset 0 8px 0 rgba(255,255,255,0.09);
+    }
+
+    .cup::after {
+      content: "";
+      position: absolute;
+      right: -36%;
+      top: 23%;
+      width: 42%;
+      height: 36%;
+      border: 4px solid #40515a;
+      border-left: 0;
+      border-radius: 0 18px 18px 0;
+    }
+
+    .steam {
+      position: absolute;
+      left: 45.2%;
+      bottom: 25%;
+      width: 4%;
+      height: 18%;
+      border-left: 2px solid rgba(233, 240, 232, 0.24);
+      border-radius: 50%;
+      filter: blur(0.2px);
+    }
+
+    .plant {
+      position: absolute;
+      left: 6%;
+      bottom: 20%;
+      width: 12%;
+      height: 23%;
+    }
+
+    .plant .pot {
+      position: absolute;
+      bottom: 0;
+      left: 26%;
+      width: 48%;
+      height: 34%;
+      background: linear-gradient(90deg, #42322c, #6b4a35);
+      clip-path: polygon(14% 0, 86% 0, 72% 100%, 28% 100%);
+    }
+
+    .leaf {
+      position: absolute;
+      bottom: 27%;
+      left: 48%;
+      width: 16%;
+      height: 54%;
+      background: #345e4c;
+      border-radius: 100% 0 100% 0;
+      transform-origin: bottom center;
+      box-shadow: inset 7px 0 10px rgba(255,255,255,0.08);
+    }
+
+    .leaf:nth-child(1) { transform: rotate(-43deg); }
+    .leaf:nth-child(2) { transform: rotate(-18deg); height: 66%; background: #49755d; }
+    .leaf:nth-child(3) { transform: rotate(18deg); height: 60%; }
+    .leaf:nth-child(4) { transform: rotate(43deg); background: #416e57; }
+
+    .silence {
+      position: absolute;
+      left: 10%;
+      top: 67%;
+      color: rgba(221, 230, 224, 0.42);
+      font-size: clamp(18px, 3vw, 38px);
+      letter-spacing: 0;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    @media (max-width: 720px) {
+      .frame {
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+      }
+
+      .window {
+        left: 7%;
+        top: 7%;
+        width: 86%;
+        height: 43%;
+      }
+
+      .screen {
+        left: 42%;
+        bottom: 24%;
+        width: 42%;
+        height: 20%;
+      }
+
+      .lamp {
+        right: 3%;
+        bottom: 30%;
+        width: 28%;
+      }
+
+      .paper {
+        left: 13%;
+        width: 42%;
+      }
+
+      .plant {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="frame" aria-label="A quiet night window">
+    <section class="window">
+      <div class="glass-mark"></div>
+    </section>
+
+    <div class="table"></div>
+
+    <div class="plant" aria-hidden="true">
+      <i class="leaf"></i>
+      <i class="leaf"></i>
+      <i class="leaf"></i>
+      <i class="leaf"></i>
+      <div class="pot"></div>
+    </div>
+
+    <div class="paper" aria-hidden="true"></div>
+    <div class="cup" aria-hidden="true"></div>
+    <div class="steam" aria-hidden="true"></div>
+
+    <section class="screen" aria-hidden="true">
+      <div class="chart">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </section>
+
+    <div class="lamp" aria-hidden="true">
+      <div class="lamp-base"></div>
+    </div>
+
+    <div class="silence">窗口</div>
+  </main>
+</body>
+</html>

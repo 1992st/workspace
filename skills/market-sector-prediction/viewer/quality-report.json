@@ -1,0 +1,131 @@
+{
+  "skill": {
+    "name": "market-sector-prediction",
+    "description": "Win_Stock × Vibe-Trading 大盘与板块预测 Skill - 受控接入 Vibe-Trading，生成可追溯、可复盘的大盘/板块预测",
+    "path": "/Volumes/zhangstExtern/openclaw/workspace/win_stock/skills/market-sector-prediction",
+    "mode": "script-flow",
+    "flow_source": "semantic_agent",
+    "flow_spec": "/Volumes/zhangstExtern/openclaw/workspace/win_stock/skills/market-sector-prediction/viewer-flow-spec.json"
+  },
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 19
+  },
+  "findings": [
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/__init__.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/blocked_report_writer.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/capability_probe.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/confidence_policy.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/evidence_mapper.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/fact_reconciliation.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/index_writer.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/local_snapshot.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/market_adapter.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/prediction_thresholds.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/quality_gate.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/report_writer.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/review_bridge.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/sector_adapter.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/sector_taxonomy.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/stock_context_bridge.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/tool_whitelist.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "runtime/vibe_client.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "tests/test_prediction_runtime.py"
+    }
+  ]
+}

@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledger Lamp</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #06090d;
+      --bg1: #101820;
+      --wood0: #221712;
+      --wood1: #4b3020;
+      --paper: #d8d4c6;
+      --paper-dim: #a6a295;
+      --ink: #1a2024;
+      --gold: #e7bd6a;
+      --gold-soft: rgba(231, 189, 106, 0.28);
+      --green: #74c8a4;
+      --red: #d26b65;
+      --blue: #7aa6c9;
+      --line: rgba(255,255,255,0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 22%, rgba(231, 189, 106, 0.13), transparent 28%),
+        radial-gradient(circle at 18% 84%, rgba(116, 200, 164, 0.1), transparent 24%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+
+    .canvas {
+      position: relative;
+      width: min(96vw, 1220px);
+      height: min(84vh, 790px);
+      background:
+        radial-gradient(circle at 72% 34%, rgba(231, 189, 106, 0.1), transparent 24%),
+        linear-gradient(180deg, #101923 0%, #0b1118 63%, #08090c 100%);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 48px 100px rgba(0,0,0,0.58), inset 0 0 0 10px rgba(255,255,255,0.022);
+      overflow: hidden;
+    }
+
+    .back-grid {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 0 49px, rgba(255,255,255,0.035) 50px 51px, transparent 52px) 0 0 / 96px 96px,
+        linear-gradient(180deg, transparent 0 49px, rgba(255,255,255,0.028) 50px 51px, transparent 52px) 0 0 / 96px 96px;
+      opacity: 0.7;
+    }
+
+    .table {
+      position: absolute;
+      left: -4%;
+      right: -4%;
+      bottom: -3%;
+      height: 39%;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.035), transparent 22%, rgba(255,255,255,0.03) 74%, transparent),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 120px),
+        linear-gradient(180deg, var(--wood1), var(--wood0));
+      transform: perspective(800px) rotateX(4deg);
+      transform-origin: bottom;
+      box-shadow: inset 0 24px 34px rgba(255,255,255,0.035), 0 -16px 50px rgba(0,0,0,0.36);
+    }
+
+    .lamp {
+      position: absolute;
+      right: 9%;
+      top: 8%;
+      width: 21%;
+      height: 63%;
+    }
+
+    .lamp .shade {
+      position: absolute;
+      left: 13%;
+      top: 0;
+      width: 74%;
+      height: 24%;
+      background: linear-gradient(180deg, #f3d58c 0%, #a97038 100%);
+      clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
+      box-shadow: 0 0 95px 34px var(--gold-soft);
+    }
+
+    .lamp .neck {
+      position: absolute;
+      left: 47%;
+      top: 23%;
+      width: 6%;
+      height: 53%;
+      background: linear-gradient(90deg, #5d3b21, #c58a46, #4b2e1c);
+      border-radius: 8px;
+    }
+
+    .lamp .base {
+      position: absolute;
+      left: 24%;
+      bottom: 1%;
+      width: 52%;
+      height: 11%;
+      border-radius: 50% 50% 10px 10px;
+      background: linear-gradient(180deg, #c58a46, #50311d);
+      box-shadow: 0 12px 22px rgba(0,0,0,0.38);
+    }
+
+    .ledger {
+      position: absolute;
+      left: 11%;
+      bottom: 13%;
+      width: 48%;
+      height: 52%;
+      transform: rotate(-2deg);
+      filter: drop-shadow(0 24px 26px rgba(0,0,0,0.34));
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 49.5%, rgba(68,59,50,0.34) 50%, transparent 50.5%),
+        linear-gradient(180deg, rgba(255,255,255,0.4), transparent 10%),
+        var(--paper);
+      border-radius: 4px;
+      border: 1px solid rgba(60, 46, 33, 0.35);
+      overflow: hidden;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 9% 7%;
+      background:
+        repeating-linear-gradient(180deg, transparent 0 22px, rgba(26,32,36,0.18) 23px 24px),
+        linear-gradient(90deg, transparent 0 15%, rgba(26,32,36,0.24) 15% 15.5%, transparent 16% 100%),
+        linear-gradient(90deg, transparent 0 65%, rgba(26,32,36,0.24) 65% 65.5%, transparent 66% 100%);
+    }
+
+    .mark {
+      position: absolute;
+      height: 8px;
+      border-radius: 6px;
+      opacity: 0.8;
+    }
+
+    .m1 { left: 10%; top: 18%; width: 24%; background: var(--green); }
+    .m2 { left: 38%; top: 18%; width: 18%; background: var(--blue); }
+    .m3 { left: 69%; top: 18%; width: 14%; background: var(--red); }
+    .m4 { left: 10%; top: 30%; width: 18%; background: var(--red); }
+    .m5 { left: 38%; top: 30%; width: 22%; background: var(--green); }
+    .m6 { left: 69%; top: 30%; width: 12%; background: var(--blue); }
+    .m7 { left: 10%; top: 42%; width: 28%; background: var(--blue); }
+    .m8 { left: 38%; top: 42%; width: 12%; background: var(--red); }
+    .m9 { left: 69%; top: 42%; width: 18%; background: var(--green); }
+    .m10 { left: 10%; top: 54%; width: 19%; background: var(--green); }
+    .m11 { left: 38%; top: 54%; width: 28%; background: var(--blue); }
+    .m12 { left: 69%; top: 54%; width: 10%; background: var(--red); }
+
+    .thread {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: rgba(74, 54, 37, 0.42);
+    }
+
+    .loupe {
+      position: absolute;
+      left: 48%;
+      bottom: 18%;
+      width: 16%;
+      aspect-ratio: 1;
+      border: 8px solid rgba(206, 218, 215, 0.58);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.2), rgba(255,255,255,0.04) 60%, transparent);
+      box-shadow: inset 0 0 20px rgba(255,255,255,0.1), 0 18px 30px rgba(0,0,0,0.34);
+    }
+
+    .loupe::after {
+      content: "";
+      position: absolute;
+      right: -44%;
+      bottom: -26%;
+      width: 58%;
+      height: 10%;
+      background: linear-gradient(90deg, rgba(206,218,215,0.72), rgba(88,74,64,0.9));
+      transform: rotate(43deg);
+      border-radius: 99px;
+    }
+
+    .cards {
+      position: absolute;
+      left: 62%;
+      bottom: 12%;
+      width: 17%;
+      height: 31%;
+    }
+
+    .card {
+      position: absolute;
+      width: 74%;
+      height: 48%;
+      background: linear-gradient(150deg, #dae0dc, #aeb8b4);
+      border: 1px solid rgba(50,60,60,0.3);
+      box-shadow: 0 14px 20px rgba(0,0,0,0.24);
+    }
+
+    .card:nth-child(1) {
+      left: 1%;
+      top: 9%;
+      transform: rotate(10deg);
+    }
+
+    .card:nth-child(2) {
+      left: 13%;
+      top: 28%;
+      transform: rotate(-7deg);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 12%;
+      top: 22%;
+      width: 58%;
+      height: 2px;
+      background: rgba(26,32,36,0.52);
+      box-shadow: 0 18px 0 rgba(26,32,36,0.38), 0 36px 0 rgba(26,32,36,0.32);
+    }
+
+    .moon {
+      position: absolute;
+      left: 9%;
+      top: 10%;
+      width: 9%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #d9e3dc;
+      box-shadow: 0 0 36px rgba(217,227,220,0.38);
+    }
+
+    .moon::after {
+      content: "";
+      position: absolute;
+      left: 30%;
+      top: -3%;
+      width: 92%;
+      height: 106%;
+      border-radius: 50%;
+      background: #101923;
+    }
+
+    .constellation {
+      position: absolute;
+      left: 23%;
+      top: 12%;
+      width: 24%;
+      height: 22%;
+    }
+
+    .star {
+      position: absolute;
+      width: 4px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(226,235,234,0.78);
+      box-shadow: 0 0 12px rgba(226,235,234,0.3);
+    }
+
+    .star:nth-child(1) { left: 8%; top: 14%; }
+    .star:nth-child(2) { left: 34%; top: 7%; }
+    .star:nth-child(3) { left: 52%; top: 42%; }
+    .star:nth-child(4) { left: 82%; top: 28%; }
+    .star:nth-child(5) { left: 70%; top: 76%; }
+
+    .constellation svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.28;
+    }
+
+    .ticker {
+      position: absolute;
+      left: 22%;
+      top: 70%;
+      width: 28%;
+      height: 10%;
+    }
+
+    .ticker i {
+      position: absolute;
+      bottom: 0;
+      width: 7%;
+      border-radius: 4px 4px 0 0;
+      opacity: 0.78;
+    }
+
+    .ticker i:nth-child(1) { left: 0%; height: 38%; background: var(--green); }
+    .ticker i:nth-child(2) { left: 12%; height: 54%; background: var(--green); }
+    .ticker i:nth-child(3) { left: 24%; height: 44%; background: var(--red); }
+    .ticker i:nth-child(4) { left: 36%; height: 73%; background: var(--green); }
+    .ticker i:nth-child(5) { left: 48%; height: 29%; background: var(--red); }
+    .ticker i:nth-child(6) { left: 60%; height: 66%; background: var(--blue); }
+    .ticker i:nth-child(7) { left: 72%; height: 82%; background: var(--green); }
+    .ticker i:nth-child(8) { left: 84%; height: 52%; background: var(--red); }
+
+    .seal {
+      position: absolute;
+      left: 13%;
+      bottom: 11%;
+      width: 8%;
+      aspect-ratio: 1;
+      border: 3px solid rgba(210,107,101,0.8);
+      border-radius: 50%;
+      transform: rotate(-13deg);
+      opacity: 0.5;
+    }
+
+    .seal::before,
+    .seal::after {
+      content: "";
+      position: absolute;
+      background: rgba(210,107,101,0.7);
+    }
+
+    .seal::before {
+      left: 20%;
+      right: 20%;
+      top: 48%;
+      height: 3px;
+    }
+
+    .seal::after {
+      top: 20%;
+      bottom: 20%;
+      left: 48%;
+      width: 3px;
+    }
+
+    @media (max-width: 760px) {
+      .canvas {
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+      }
+
+      .ledger {
+        left: 8%;
+        bottom: 18%;
+        width: 72%;
+        height: 43%;
+      }
+
+      .lamp {
+        right: -1%;
+        top: 8%;
+        width: 34%;
+      }
+
+      .cards {
+        display: none;
+      }
+
+      .loupe {
+        left: 56%;
+        width: 24%;
+      }
+
+      .constellation {
+        left: 30%;
+        width: 42%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="canvas" aria-label="A desk with a ledger under a lamp">
+    <div class="back-grid"></div>
+    <div class="moon"></div>
+    <div class="constellation" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polyline points="8,14 34,7 52,42 82,28 70,76" fill="none" stroke="white" stroke-width="1"/>
+      </svg>
+      <b class="star"></b>
+      <b class="star"></b>
+      <b class="star"></b>
+      <b class="star"></b>
+      <b class="star"></b>
+    </div>
+    <div class="table"></div>
+
+    <section class="ledger" aria-hidden="true">
+      <div class="page"></div>
+      <div class="thread"></div>
+      <i class="mark m1"></i>
+      <i class="mark m2"></i>
+      <i class="mark m3"></i>
+      <i class="mark m4"></i>
+      <i class="mark m5"></i>
+      <i class="mark m6"></i>
+      <i class="mark m7"></i>
+      <i class="mark m8"></i>
+      <i class="mark m9"></i>
+      <i class="mark m10"></i>
+      <i class="mark m11"></i>
+      <i class="mark m12"></i>
+      <div class="ticker">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="seal"></div>
+    </section>
+
+    <div class="loupe" aria-hidden="true"></div>
+
+    <div class="cards" aria-hidden="true">
+      <div class="card"></div>
+      <div class="card"></div>
+    </div>
+
+    <div class="lamp" aria-hidden="true">
+      <div class="shade"></div>
+      <div class="neck"></div>
+      <div class="base"></div>
+    </div>
+  </main>
+</body>
+</html>

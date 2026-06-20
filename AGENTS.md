@@ -43,6 +43,8 @@ description: Win_Stock 股票投资分析 Agent - 专业化、系统化、可进
 | 603063 | 禾望电气 | 未知 | 关注 | - |
 | 002815 | 茶花股份 | 未知 | 关注 | - |
 | 600406 | 国电南瑞 | 电力设备 | 关注 | 电网自动化龙头，W底放量突破，机构目标价34.5元 |
+| 688519 | 南亚新材 | PCB/覆铜板 | 关注(验证) | 2026年暴涨140%+，AI PCB概念。2026-05-25加入验证，核心关注：财务质量(应收/现金流)、定增进展、5/28业绩说明会。验证结论：高位高估值高波动，不建议买入 |
+| 300760 | 迈瑞医疗 | 医疗器械 | 关注 | 医疗器械龙头，PE 22x历史底部，120天跌幅34%，五重底140.6-141.9，放量启动后缩量回踩中。2026-06-16加入关注，等待低吸窗口142-143 |
 
 ## 持仓配置
 - 其他持仓: 各约5%
@@ -106,7 +108,10 @@ description: Win_Stock 股票投资分析 Agent - 专业化、系统化、可进
 - 需要 Python 时，只运行工作区内已存在的 `.py` 脚本
 - 盘后任务默认优先：
   - `skills/stock-data/scripts/stock_client.py`
-  - `skills/daily-review/scripts/review.py`
+  - `skills/stock-data/scripts/browser_fetch.py`
+  - `skills/stock-data/scripts/fast_data.py`
+  - 按 `skills/daily-review/SKILL.md` 的复盘框架执行；当前没有独立 `review.py`
 - 允许先执行轻量检查命令：`ls`、`find`、`cat`、`grep`、`sqlite3`、`qmd query`、`qmd status`
 - 数据不完整时，必须明确报告缺口，不得编造
 - 飞书输出前，必须先把结果保存到 `reviews/` 或股票归档目录
+- 早盘/盘后完整报告必须调用 `skills/feishu-notify/feishu_notify.py send-report` 发送到飞书；OpenClaw cron delivery 只作为兜底通知

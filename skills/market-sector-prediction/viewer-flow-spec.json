@@ -1,0 +1,430 @@
+{
+  "summary": {
+    "responsibility": "受控接入 Vibe-Trading，为 Win_Stock 生成可追溯、可门控、可复盘的大盘与板块预测。",
+    "when_to_use": [
+      "用户要求分析大盘短期或中期走势",
+      "用户要求分析板块轮动、板块阶段、退潮信号或龙头确认",
+      "cron 需要生成盘前、盘中、盘后市场/板块预测",
+      "个股分析需要读取最近有效的大盘/板块环境"
+    ],
+    "when_not_to_use": [
+      "用户要求直接执行交易",
+      "用户只要求普通个股行情或财务数据",
+      "Vibe-Trading 不可用且本地数据也不足以形成观察报告"
+    ],
+    "core_outputs": [
+      "prediction.health.check 能力探测结果",
+      "大盘/板块预测 JSON",
+      "大盘/板块预测 Markdown 报告",
+      "blocked report",
+      "prediction index.jsonl",
+      "daily-review 可读取并回写状态的预测复盘文件"
+    ],
+    "boundaries": [
+      "Vibe-Trading 只提供研究证据，不是事实最终裁判",
+      "Win_Stock 本地事实和质量门控优先",
+      "standard 模式不调用 swarm",
+      "未通过质量门控时不得输出方向性预测"
+    ]
+  },
+  "flows": [
+    {
+      "id": "capability-probe",
+      "title": "Vibe Capability Probe",
+      "description": "在任何预测前探测 Vibe-Trading MCP 是否存在、真实暴露哪些工具，以及 standard/deep 模式是否可用。",
+      "intent": "避免假设外部开源项目接口稳定，先用真实 manifest 决定可启用能力。",
+      "trigger": "调用 prediction.health.check，或任意 market/sector 预测 action 的前置步骤。",
+      "inputs": [
+        "vibe-trading-mcp 命令",
+        "WIN_STOCK_VIBE_TOOL_MANIFEST 环境变量（可选）",
+        "工具白名单"
+      ],
+      "outputs": [
+        "vibe_available",
+        "tools_detected",
+        "tools_enabled",
+        "tools_disabled",
+        "modes_available",
+        "missing_requirements"
+      ],
+      "decision_points": [
+        "如果命令不存在，返回 degraded/blocked 能力状态",
+        "只有 get_market_data + factor_analysis 可用时启用 standard",
+        "只有 run_swarm + get_run_result + LLM key 可用时启用 deep"
+      ],
+      "blockers": [
+        "vibe-trading-mcp 不在 PATH",
+        "无法读取工具 manifest",
+        "关键工具不在白名单或未被检测到"
+      ],
+      "tuning_points": [
+        {
+          "title": "允许工具集合",
+          "description": "调整可调用的 Vibe 工具，以及禁止工具策略。",
+          "files": [
+            "runtime/tool_whitelist.py"
+          ]
+        },
+        {
+          "title": "能力探测命令",
+          "description": "调整探测 vibe-trading-mcp 的命令参数和 manifest 解析策略。",
+          "files": [
+            "runtime/capability_probe.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "load-tool-policy",
+          "title": "Load Tool Policy",
+          "description": "读取允许/禁止工具集合，确保不会透传任意 Vibe tool。",
+          "kind": "read",
+          "evidence": [
+            "runtime/tool_whitelist.py"
+          ],
+          "files": [
+            "runtime/tool_whitelist.py"
+          ]
+        },
+        {
+          "id": "probe-manifest",
+          "title": "Probe Vibe Manifest",
+          "description": "从环境变量或 vibe-trading-mcp 命令探测真实可用工具。",
+          "kind": "run",
+          "evidence": [
+            "runtime/capability_probe.py"
+          ],
+          "files": [
+            "runtime/capability_probe.py"
+          ]
+        },
+        {
+          "id": "derive-modes",
+          "title": "Derive Prediction Modes",
+          "description": "根据工具和 LLM key 判断 standard/deep 是否可用。",
+          "kind": "decide",
+          "evidence": [
+            "runtime/capability_probe.py"
+          ],
+          "files": [
+            "runtime/capability_probe.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "market-prediction",
+      "title": "Generate Market Prediction",
+      "description": "生成大盘短期或中期预测，先构建 Win_Stock 本地事实，再受控调用 Vibe，最后经过事实对账和质量门控。",
+      "intent": "让大盘预测可追溯、可降级、可保存，而不是依赖 Vibe 文本直接给结论。",
+      "trigger": "调用 prediction.market.generate 或 prediction.market.prepare。",
+      "inputs": [
+        "horizon: short|mid",
+        "mode: standard|deep",
+        "Win_Stock stock_client market 数据",
+        "Vibe 工具能力"
+      ],
+      "outputs": [
+        "data/market/predictions/{date}_market_{horizon}_prediction.json",
+        "data/market/predictions/{date}_market_{horizon}_prediction.md",
+        "data/market/predictions/{date}_market_blocked.md（阻断时）",
+        "data/market/predictions/index.jsonl"
+      ],
+      "decision_points": [
+        "Vibe 不可用但本地数据可用时，只允许 degraded 观察报告",
+        "关键事实冲突时 blocked",
+        "缺概率、反方证据或失效条件时 blocked",
+        "standard 模式不调用 swarm"
+      ],
+      "blockers": [
+        "Vibe MCP 不可用且本地大盘数据不足",
+        "交易日错位",
+        "成交额单位无法确认",
+        "输出缺少概率/反证/失效条件"
+      ],
+      "tuning_points": [
+        {
+          "title": "大盘本地快照",
+          "description": "调整本地 market 数据的采集和字段判断。",
+          "files": [
+            "runtime/local_snapshot.py"
+          ]
+        },
+        {
+          "title": "事实对账规则",
+          "description": "调整交易日、指数、成交额和资金冲突的处理策略。",
+          "files": [
+            "runtime/fact_reconciliation.py"
+          ]
+        },
+        {
+          "title": "质量门控",
+          "description": "调整大盘预测必须项、blocked 条件和置信度上限。",
+          "files": [
+            "runtime/quality_gate.py",
+            "runtime/confidence_policy.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "probe-vibe",
+          "title": "Probe Vibe",
+          "description": "读取 Vibe 可用能力和工具清单。",
+          "kind": "run",
+          "evidence": [
+            "runtime/market_adapter.py",
+            "runtime/vibe_client.py"
+          ],
+          "files": [
+            "runtime/market_adapter.py",
+            "runtime/vibe_client.py"
+          ]
+        },
+        {
+          "id": "build-local-snapshot",
+          "title": "Build Local Snapshot",
+          "description": "调用 stock_client.py market 获取 Win_Stock 本地事实。",
+          "kind": "run",
+          "evidence": [
+            "runtime/local_snapshot.py"
+          ],
+          "files": [
+            "runtime/local_snapshot.py"
+          ]
+        },
+        {
+          "id": "collect-vibe-standard",
+          "title": "Collect Vibe Evidence",
+          "description": "只调用白名单工具；standard 模式收集 market_data、factor_analysis、pattern_recognition、可选 backtest。",
+          "kind": "run",
+          "evidence": [
+            "runtime/market_adapter.py"
+          ],
+          "files": [
+            "runtime/market_adapter.py"
+          ]
+        },
+        {
+          "id": "reconcile-and-gate",
+          "title": "Reconcile And Gate",
+          "description": "用 Win_Stock 本地事实裁决冲突，再用质量门控决定 ok/degraded/blocked。",
+          "kind": "decide",
+          "evidence": [
+            "runtime/fact_reconciliation.py",
+            "runtime/quality_gate.py"
+          ],
+          "files": [
+            "runtime/fact_reconciliation.py",
+            "runtime/quality_gate.py"
+          ]
+        },
+        {
+          "id": "write-artifact",
+          "title": "Write Artifacts",
+          "description": "根据门控结果写正式报告或 blocked report，并更新 index。",
+          "kind": "report",
+          "evidence": [
+            "runtime/report_writer.py",
+            "runtime/blocked_report_writer.py",
+            "runtime/index_writer.py"
+          ],
+          "files": [
+            "runtime/report_writer.py",
+            "runtime/blocked_report_writer.py",
+            "runtime/index_writer.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sector-prediction",
+      "title": "Generate Sector Prediction",
+      "description": "解析板块口径并保存成分股快照，再生成板块预测、退潮信号和复盘验证点。",
+      "intent": "避免不同板块体系混用，保证板块预测知道自己基于哪个 taxonomy。",
+      "trigger": "调用 prediction.sector.generate 或 prediction.sector.prepare。",
+      "inputs": [
+        "sector",
+        "sector_taxonomy（默认 eastmoney_industry）",
+        "horizon: short|mid",
+        "mode: standard|deep"
+      ],
+      "outputs": [
+        "data/sectors/snapshots/{sector}/{date}_members.json",
+        "data/sectors/predictions/{sector}/{date}_{horizon}_prediction.json",
+        "data/sectors/predictions/{sector}/{date}_{horizon}_prediction.md",
+        "data/sectors/predictions/index.jsonl"
+      ],
+      "decision_points": [
+        "未知 taxonomy 时 blocked",
+        "缺成分股快照时 blocked",
+        "缺板块阶段、资金或龙头证据时 degraded",
+        "taxonomy 成分股冲突超过 20% 时 degraded"
+      ],
+      "blockers": [
+        "板块名称为空",
+        "不支持的 sector_taxonomy",
+        "缺 taxonomy 或成分股快照",
+        "缺概率/反证/失效条件"
+      ],
+      "tuning_points": [
+        {
+          "title": "板块体系",
+          "description": "调整支持的板块 taxonomy 和默认口径。",
+          "files": [
+            "runtime/sector_taxonomy.py"
+          ]
+        },
+        {
+          "title": "板块证据映射",
+          "description": "调整板块阶段、龙头、退潮信号和资金证据映射。",
+          "files": [
+            "runtime/evidence_mapper.py",
+            "runtime/sector_adapter.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "resolve-taxonomy",
+          "title": "Resolve Taxonomy",
+          "description": "把用户输入的板块解析为明确 taxonomy 和 sector_id，并写成分股快照。",
+          "kind": "decide",
+          "evidence": [
+            "runtime/sector_taxonomy.py"
+          ],
+          "files": [
+            "runtime/sector_taxonomy.py"
+          ]
+        },
+        {
+          "id": "build-sector-snapshot",
+          "title": "Build Sector Snapshot",
+          "description": "构建板块本地事实快照和成分股快照引用。",
+          "kind": "run",
+          "evidence": [
+            "runtime/local_snapshot.py"
+          ],
+          "files": [
+            "runtime/local_snapshot.py"
+          ]
+        },
+        {
+          "id": "collect-sector-vibe",
+          "title": "Collect Sector Evidence",
+          "description": "受控调用 Vibe 板块相关工具，收集板块研究证据。",
+          "kind": "run",
+          "evidence": [
+            "runtime/sector_adapter.py",
+            "runtime/vibe_client.py"
+          ],
+          "files": [
+            "runtime/sector_adapter.py",
+            "runtime/vibe_client.py"
+          ]
+        },
+        {
+          "id": "gate-sector",
+          "title": "Gate Sector Prediction",
+          "description": "检查 taxonomy、成分股、资金/相对强弱、阶段、龙头、退潮信号等必须项。",
+          "kind": "decide",
+          "evidence": [
+            "runtime/quality_gate.py"
+          ],
+          "files": [
+            "runtime/quality_gate.py"
+          ]
+        },
+        {
+          "id": "write-sector-report",
+          "title": "Write Sector Report",
+          "description": "保存板块预测或阻断报告，并写 index。",
+          "kind": "report",
+          "evidence": [
+            "runtime/report_writer.py",
+            "runtime/blocked_report_writer.py",
+            "runtime/index_writer.py"
+          ],
+          "files": [
+            "runtime/report_writer.py",
+            "runtime/blocked_report_writer.py",
+            "runtime/index_writer.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review-and-context",
+      "title": "Review And Stock Context",
+      "description": "暴露 pending 预测给 daily-review，并把最近有效的大盘/板块预测注入个股分析上下文。",
+      "intent": "让预测不是一次性报告，而是进入复盘和个股分析闭环。",
+      "trigger": "调用 prediction.review.update 或 prediction.latest.get。",
+      "inputs": [
+        "prediction index.jsonl",
+        "可选 sector 名称",
+        "个股分析所属行业"
+      ],
+      "outputs": [
+        "pending predictions",
+        "review JSON files",
+        "latest_market_prediction",
+        "latest_sector_prediction",
+        "freshness_rule"
+      ],
+      "decision_points": [
+        "只读取 ok/degraded 预测作为上下文",
+        "blocked 预测只用于复盘缺口，不注入方向环境",
+        "预测缺失或过期时不阻塞个股分析",
+        "prediction.review.update 会写 review JSON 并把 index 记录标记为 reviewed"
+      ],
+      "blockers": [
+        "index 文件不存在时返回空上下文",
+        "预测 JSON 文件被删除时回退 index 摘要"
+      ],
+      "tuning_points": [
+        {
+          "title": "复盘桥",
+          "description": "调整 daily-review 如何读取 pending 预测。",
+          "files": [
+            "runtime/review_bridge.py"
+          ]
+        },
+        {
+          "title": "个股上下文桥",
+          "description": "调整最近有效预测的读取和 freshness 规则。",
+          "files": [
+            "runtime/stock_context_bridge.py"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "read-index",
+          "title": "Read Prediction Index",
+          "description": "读取 market/sectors index.jsonl 中 pending 或最新记录。",
+          "kind": "read",
+          "evidence": [
+            "runtime/review_bridge.py",
+            "runtime/stock_context_bridge.py"
+          ],
+          "files": [
+            "runtime/review_bridge.py",
+            "runtime/stock_context_bridge.py"
+          ]
+        },
+        {
+          "id": "return-context",
+          "title": "Return Context",
+          "description": "返回 daily-review 或 stock-analysis 可消费的结构化上下文。",
+          "kind": "report",
+          "evidence": [
+            "runtime/stock_context_bridge.py"
+          ],
+          "files": [
+            "runtime/stock_context_bridge.py"
+          ]
+        }
+      ]
+    }
+  ]
+}

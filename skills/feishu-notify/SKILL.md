@@ -52,6 +52,35 @@ notifier.send_card(
 )
 ```
 
+### 发送完整 Markdown 报告
+
+早盘和盘后 cron 必须使用这个入口发送完整文档，不能只依赖 OpenClaw cron delivery 的最终摘要。
+
+```bash
+python3 skills/feishu-notify/feishu_notify.py send-report \
+  --path reviews/daily/YYYY-MM-DD_复盘报告.md \
+  --title "YYYY-MM-DD 盘后复盘报告"
+```
+
+发送策略：
+
+- 文本分片不超过 3 段：按分片文本发送，便于直接阅读
+- 文本分片超过 3 段：自动上传为飞书文件，再发送文件消息，避免刷屏
+
+1. 发送标题卡片
+2. 根据长度选择分片文本或文件消息
+3. 发送报告绝对路径
+4. 在报告同目录写入 `.delivery.json`
+
+测试分片但不真实发送：
+
+```bash
+python3 skills/feishu-notify/feishu_notify.py send-report \
+  --path reviews/morning/YYYY-MM-DD_早盘分析.md \
+  --title "YYYY-MM-DD 早盘分析" \
+  --dry-run
+```
+
 ### 发送紧急新闻
 ```python
 notifier.send_urgent(

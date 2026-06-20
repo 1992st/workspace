@@ -484,6 +484,7 @@ class StockSkillTests(unittest.TestCase):
             "source_reliability": {
                 "primary_sources": ["巨潮资讯", "Reuters"],
                 "tradeable_signal_threshold": "S or A+capital confirmation",
+                "platform_fund_flow_disclaimer": "主力资金仅为第三方平台算法口径，不等于真实主力意图。",
             },
             "rumor_check": {
                 "final_verdict": "official_confirmed",
@@ -491,6 +492,13 @@ class StockSkillTests(unittest.TestCase):
             "recommendation": {"action": "SELL", "confidence": 72, "position_size": "MODERATE"},
             "reasoning": {"primary_factors": ["trend broken"]},
             "summary": "减仓或退出，等待结构修复。",
+            "risk_gate": {
+                "mode": "normal_analysis",
+                "offensive_advice_allowed": True,
+                "blocked_actions": [],
+                "account_info_required": [],
+                "reason": "",
+            },
             "profile_updates": {
                 "support_resistance_updates": ["10.0 附近为近期确认支撑"],
                 "behavior_pattern_updates": ["放量且强于指数时延续性更高"],
@@ -602,6 +610,82 @@ class StockSkillTests(unittest.TestCase):
         result = skill.run(payload)
         self.assertEqual(result.status, "error")
         self.assertIn("counter_evidence", " ".join(result.data["data"]["errors"]))
+
+    def test_analysis_result_validate_rejects_risk_gate_offensive_advice(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result["recommendation"] = {
+            "action": "BUY",
+            "confidence": 75,
+            "position_size": "MODERATE",
+            "target_price": 16.8,
+        }
+        analysis_result["risk_gate"] = {
+            "mode": "risk_gate",
+            "offensive_advice_allowed": False,
+            "blocked_actions": ["BUY", "ADD", "DO_T", "HIGH_CONFIDENCE_SELL"],
+            "account_info_required": ["总仓位", "单票仓位", "浮亏浮盈", "是否杠杆", "5日最大可承受回撤"],
+            "reason": "账户风险未知",
+        }
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data["data_quality"],
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        joined = " ".join(result.data["data"]["errors"])
+        self.assertIn("risk_gate mode forbids BUY/ADD", joined)
+        self.assertIn("risk_gate mode forbids target_price", joined)
+
+    def test_analysis_result_validate_rejects_do_t_without_intraday(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result["t_guide"] = {
+            "decision": "DO_T",
+            "plan": "回踩15.1正T，反弹15.5卖出",
+        }
+        data_quality = {
+            **data["data_quality"],
+            "missing_sections": [{"section": "intraday_1m", "reason": "分时接口失败"}],
+        }
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data_quality,
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        self.assertIn("missing intraday_1m forbids do-T plan", " ".join(result.data["data"]["errors"]))
+
+    def test_analysis_result_validate_rejects_foreign_capital_without_north_south(self):
+        skill = self.make_skill()
+        skill._load_analysis_payload = lambda symbol: ANALYSIS_PAYLOAD_FIXTURE
+        prepared = skill.run({"action": "analysis.stock.prepare", "symbol": "601211"})
+        data = prepared.data["data"]
+        analysis_result = self._valid_analysis_result(data)
+        analysis_result["market_regime"]["incremental_capital_direction"] = "北向资金回流，外资态度转暖"
+        data_quality = {
+            **data["data_quality"],
+            "missing_sections": [{"section": "north_south", "reason": "北向南向接口失败"}],
+        }
+        payload = {
+            "action": "analysis.result.validate",
+            "analysis_result": analysis_result,
+            "prompt_bundle": data["prompt_bundle"],
+            "data_quality": data_quality,
+        }
+        result = skill.run(payload)
+        self.assertEqual(result.status, "error")
+        self.assertIn("missing north_south forbids foreign capital conclusions", " ".join(result.data["data"]["errors"]))
 
     def test_tool_failure_is_recorded(self):
         temp_dir = tempfile.TemporaryDirectory()

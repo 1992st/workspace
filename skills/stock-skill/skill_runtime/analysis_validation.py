@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 
 TRADE_ACTIONS = {"BUY", "SELL"}
+OFFENSIVE_ACTIONS = {"BUY", "ADD"}
 HIGH_CONFIDENCE_THRESHOLD = 70
 RUMOR_CONFIRMED = {"official_confirmed", "multi_source_confirmed"}
 
@@ -89,6 +90,7 @@ def validate_analysis_result(
     confidence = _coerce_confidence(recommendation.get("confidence"))
     confidence_gate = str(data_quality.get("confidence_gate") or "")
     position_size = str(recommendation.get("position_size") or "").upper()
+    blocked_actions = _string_list(recommendation.get("blocked_actions", []))
     analysis_meta = analysis_result.get("analysis_meta", {})
     counter_evidence = analysis_result.get("counter_evidence", {})
     bias_check = analysis_result.get("bias_check", {})
@@ -98,6 +100,10 @@ def validate_analysis_result(
     trigger_and_invalidation = analysis_result.get("trigger_and_invalidation", {})
     source_reliability = analysis_result.get("source_reliability", {})
     rumor_check = analysis_result.get("rumor_check", {})
+    risk_gate = analysis_result.get("risk_gate", {})
+    t_guide = analysis_result.get("t_guide", {})
+    data_status = analysis_result.get("data_status", {})
+    missing_sections = _missing_sections_from_quality(data_quality)
 
     if action in TRADE_ACTIONS and confidence >= 60 and len(cited_ids) < 2:
         errors.append("high-confidence BUY/SELL recommendations must cite at least 2 injected strategies")
@@ -122,6 +128,23 @@ def validate_analysis_result(
 
     if confidence_gate == "observe_only" and position_size == "HEAVY":
         errors.append("HEAVY position_size is forbidden when capital confirmation is unavailable")
+
+    _validate_risk_gate(
+        errors=errors,
+        risk_gate=risk_gate,
+        recommendation=recommendation,
+        action=action,
+        confidence=confidence,
+        blocked_actions=blocked_actions,
+    )
+    _validate_data_gap_boundaries(
+        errors=errors,
+        analysis_result=analysis_result,
+        data_status=data_status,
+        t_guide=t_guide,
+        missing_sections=missing_sections,
+    )
+    _validate_funding_language(errors=errors, analysis_result=analysis_result, missing_sections=missing_sections)
 
     expected_categories = {"market", "sector", "capital"}
     supporting_evidence = expectation_analysis.get("supporting_evidence", [])
@@ -182,6 +205,152 @@ def validate_analysis_result(
             "selection_reason": strategy_usage.get("selection_reason"),
         },
     }
+
+
+def _validate_risk_gate(
+    *,
+    errors: List[str],
+    risk_gate: Any,
+    recommendation: Dict[str, Any],
+    action: str,
+    confidence: float,
+    blocked_actions: List[str],
+) -> None:
+    if not isinstance(risk_gate, dict):
+        errors.append("risk_gate block is required")
+        return
+    mode = str(risk_gate.get("mode") or "").strip()
+    if mode not in {"normal_analysis", "risk_gate"}:
+        errors.append("risk_gate.mode must be normal_analysis or risk_gate")
+        return
+    if mode != "risk_gate":
+        return
+
+    gate_blocked = set(_string_list(risk_gate.get("blocked_actions", []))) | set(blocked_actions)
+    offensive_allowed = bool(risk_gate.get("offensive_advice_allowed", True))
+    if offensive_allowed:
+        errors.append("risk_gate.offensive_advice_allowed must be false in risk_gate mode")
+    if action in OFFENSIVE_ACTIONS:
+        errors.append("risk_gate mode forbids BUY/ADD recommendations")
+    if action == "SELL" and confidence >= HIGH_CONFIDENCE_THRESHOLD:
+        errors.append("risk_gate mode forbids high-confidence SELL; use risk-reduction wording")
+    if "DO_T" not in gate_blocked:
+        errors.append("risk_gate.blocked_actions must include DO_T")
+    if "HIGH_CONFIDENCE_SELL" not in gate_blocked:
+        errors.append("risk_gate.blocked_actions must include HIGH_CONFIDENCE_SELL")
+    if not str(risk_gate.get("reason") or "").strip():
+        errors.append("risk_gate.reason is required in risk_gate mode")
+    if not risk_gate.get("account_info_required"):
+        errors.append("risk_gate.account_info_required is required in risk_gate mode")
+    if recommendation.get("target_price") not in (None, "", 0, 0.0):
+        errors.append("risk_gate mode forbids target_price")
+
+
+def _validate_data_gap_boundaries(
+    *,
+    errors: List[str],
+    analysis_result: Dict[str, Any],
+    data_status: Any,
+    t_guide: Any,
+    missing_sections: set[str],
+) -> None:
+    if "intraday_1m" in missing_sections and _t_guide_allows_trade(t_guide):
+        errors.append("missing intraday_1m forbids do-T plan")
+    if {"kline_daily_120", "kline_daily_60"} & missing_sections and _has_precise_trade_prices(analysis_result):
+        errors.append("missing kline data forbids precise target/stop/entry prices")
+    if "margin" in missing_sections and _contains_funding_assertion(analysis_result, ("融资", "融券", "融资盘", "融券盘")):
+        errors.append("missing margin forbids financing/securities-lending conclusions")
+    if "north_south" in missing_sections and _contains_funding_assertion(analysis_result, ("北向", "南向", "外资")):
+        errors.append("missing north_south forbids foreign capital conclusions")
+    if "sector" in missing_sections and _contains_funding_assertion(analysis_result, ("主线", "板块退潮", "顺应主线")):
+        errors.append("missing sector forbids main-theme/sector-retreat conclusions")
+    if isinstance(data_status, dict):
+        sections = data_status.get("sections") or {}
+        for name, section in sections.items():
+            if isinstance(section, dict) and section.get("is_cached") and not section.get("cache_age_hours") and section.get("cache_age_hours") != 0:
+                errors.append(f"cached data section {name} must disclose cache_age_hours")
+
+
+def _validate_funding_language(
+    *,
+    errors: List[str],
+    analysis_result: Dict[str, Any],
+    missing_sections: set[str],
+) -> None:
+    text = _collect_text(analysis_result)
+    strong_phrases = ("主力出货", "主力吸筹", "机构出货", "庄家", "真实意图")
+    if any(phrase in text for phrase in strong_phrases) and "platform_fund_flow_disclaimer" not in text:
+        errors.append("strong funding language requires platform_fund_flow_disclaimer")
+    if "龙虎榜" in text and "盘中" in text and "盘后" not in text:
+        errors.append("lhb conclusions must disclose post-close/conditional nature")
+    if "大宗交易" in text and "盘中" in text and "盘后" not in text:
+        errors.append("block trade conclusions must disclose post-close nature")
+    if "margin" in missing_sections and "杠杆" in text:
+        errors.append("missing margin forbids leverage-pressure conclusions")
+
+
+def _missing_sections_from_quality(data_quality: Dict[str, Any]) -> set[str]:
+    raw = data_quality.get("missing_sections") or data_quality.get("data_gaps") or []
+    missing = set()
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict):
+                value = item.get("section") or item.get("name")
+            else:
+                value = item
+            if value:
+                missing.add(str(value))
+    return missing
+
+
+def _t_guide_allows_trade(t_guide: Any) -> bool:
+    if not isinstance(t_guide, dict):
+        return False
+    decision = str(t_guide.get("decision") or t_guide.get("action") or t_guide.get("recommendation") or "").upper()
+    if decision in {"DO_T", "正T", "反T", "T", "YES"}:
+        return True
+    if t_guide.get("plan") not in (None, "", [], {}):
+        return True
+    return False
+
+
+def _has_precise_trade_prices(analysis_result: Dict[str, Any]) -> bool:
+    recommendation = analysis_result.get("recommendation") or {}
+    if isinstance(recommendation, dict):
+        for key in ("target_price", "stop_loss_price", "entry_price"):
+            value = recommendation.get(key)
+            if value not in (None, "", 0, 0.0):
+                return True
+    triggers = analysis_result.get("trigger_and_invalidation") or {}
+    return _contains_numeric_price(triggers)
+
+
+def _contains_numeric_price(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(_contains_numeric_price(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_numeric_price(item) for item in value)
+    if isinstance(value, str):
+        return any(char.isdigit() for char in value) and any(unit in value for unit in ("元", "price", "价"))
+    return isinstance(value, (int, float)) and value > 0
+
+
+def _contains_funding_assertion(value: Any, needles: tuple[str, ...]) -> bool:
+    text = _collect_text(value)
+    return any(needle in text for needle in needles)
+
+
+def _collect_text(value: Any) -> str:
+    pieces: List[str] = []
+    if isinstance(value, dict):
+        for item in value.values():
+            pieces.append(_collect_text(item))
+    elif isinstance(value, list):
+        for item in value:
+            pieces.append(_collect_text(item))
+    elif value is not None:
+        pieces.append(str(value))
+    return " ".join(pieces)
 
 
 def _string_list(value: Any) -> List[str]:

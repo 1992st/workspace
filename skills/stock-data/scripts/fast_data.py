@@ -15,6 +15,9 @@ import json
 import math
 import sys
 import time
+import urllib.parse
+import urllib.request
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -32,6 +35,8 @@ FINANCE_TTL_SEC = 86400  # 财务数据 24 小时
 SECTOR_TTL_SEC = 3600  # 板块数据 1 小时
 MARKET_TTL_SEC = 7200  # 大盘数据 2 小时
 INTRADAY_TTL_SEC = 900  # 分时数据 15 分钟
+NORTH_SOUTH_TTL_SEC = 7200  # 北向南向资金 2 小时
+LHB_TTL_SEC = 3600  # 龙虎榜 1 小时
 
 
 def _cache_path(key: str) -> Path:
@@ -53,6 +58,22 @@ def _read_cache(key: str, ttl_sec: int) -> Optional[Any]:
         return None
 
 
+def _read_cache_stale(key: str) -> Optional[Any]:
+    path = _cache_path(key)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        data = payload.get("data")
+        if isinstance(data, dict):
+            data = dict(data)
+            data["stale"] = True
+            data["cache_age_sec"] = round(time.time() - float(payload.get("_ts", 0)), 2)
+        return data
+    except Exception:
+        return None
+
+
 def _write_cache(key: str, data: Any) -> None:
     path = _cache_path(key)
     payload = {"_ts": time.time(), "data": data}
@@ -70,12 +91,16 @@ def _fail(message: str, **extra: Any) -> Dict[str, Any]:
 
 
 def _ok(data: Any, source: str = "akshare", **extra: Any) -> Dict[str, Any]:
+    fetched_at = datetime.now().isoformat(timespec="seconds")
     return {
         "success": True,
         "error": None,
         "data": data,
         "source": source,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "timestamp": fetched_at,
+        "fetched_at": fetched_at,
+        "data_status": "ok" if source != "cache" else "degraded",
+        "is_cached": source == "cache",
         **extra,
     }
 
@@ -105,38 +130,291 @@ def _load_full_spot() -> Dict[str, Dict[str, Any]]:
     # 网络请求
     import akshare as ak
 
-    frame = ak.stock_zh_a_spot_em()
-    records = frame.to_dict(orient="records")
-    # 构建 code->row 映射
-    spot_map: Dict[str, Dict[str, Any]] = {}
-    for row in records:
-        code = str(row.get("代码", "")).strip()
-        if code:
-            spot_map[code.zfill(6)] = {
-                "code": row.get("代码", ""),
-                "name": row.get("名称", ""),
-                "price": _n(row.get("最新价")),
-                "change_pct": _n(row.get("涨跌幅")),
-                "change": _n(row.get("涨跌额")),
-                "volume": _n(row.get("成交量")),
-                "amount": _n(row.get("成交额")),
-                "amplitude": _n(row.get("振幅")),
-                "high": _n(row.get("最高")),
-                "low": _n(row.get("最低")),
-                "open": _n(row.get("今开")),
-                "pre_close": _n(row.get("昨收")),
-                "volume_ratio": _n(row.get("量比")),
-                "turnover_rate": _n(row.get("换手率")),
-                "pe": _n(row.get("市盈率-动态")),
-                "pb": _n(row.get("市净率")),
-                "market_cap": _n(row.get("总市值")),
-                "circulating_cap": _n(row.get("流通市值")),
-            }
+    try:
+        frame = ak.stock_zh_a_spot_em()
+        records = frame.to_dict(orient="records")
+        spot_map = _normalize_spot_records(records)
+    except Exception:
+        spot_map = _load_full_spot_eastmoney()
 
     _full_spot_cache = spot_map
     _full_spot_ts = now
     _write_cache("full_spot", spot_map)
     return spot_map
+
+
+def _normalize_spot_records(records: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    spot_map: Dict[str, Dict[str, Any]] = {}
+    for row in records:
+        code = str(row.get("代码", row.get("f12", ""))).strip()
+        if not code:
+            continue
+        spot_map[code.zfill(6)] = {
+            "code": code,
+            "name": row.get("名称", row.get("f14", "")),
+            "price": _n(row.get("最新价", row.get("f2"))),
+            "change_pct": _n(row.get("涨跌幅", row.get("f3"))),
+            "change": _n(row.get("涨跌额", row.get("f4"))),
+            "volume": _n(row.get("成交量", row.get("f5"))),
+            "amount": _n(row.get("成交额", row.get("f6"))),
+            "amplitude": _n(row.get("振幅", row.get("f7"))),
+            "high": _n(row.get("最高", row.get("f15"))),
+            "low": _n(row.get("最低", row.get("f16"))),
+            "open": _n(row.get("今开", row.get("f17"))),
+            "pre_close": _n(row.get("昨收", row.get("f18"))),
+            "volume_ratio": _n(row.get("量比", row.get("f10"))),
+            "turnover_rate": _n(row.get("换手率", row.get("f8"))),
+            "pe": _n(row.get("市盈率-动态", row.get("f9"))),
+            "pb": _n(row.get("市净率", row.get("f23"))),
+            "market_cap": _n(row.get("总市值", row.get("f20"))),
+            "circulating_cap": _n(row.get("流通市值", row.get("f21"))),
+        }
+    return spot_map
+
+
+def _load_full_spot_eastmoney() -> Dict[str, Dict[str, Any]]:
+    fields = "f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f14,f15,f16,f17,f18,f20,f21,f23"
+    params = {
+        "pn": "1",
+        "pz": "6000",
+        "po": "1",
+        "np": "1",
+        "ut": "bd1d9ddb04089700cf9c27f6f7426281",
+        "fltt": "2",
+        "invt": "2",
+        "fid": "f3",
+        "fs": "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23",
+        "fields": fields,
+        "_": str(int(time.time() * 1000)),
+    }
+    url = "https://push2.eastmoney.com/api/qt/clist/get?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://quote.eastmoney.com/",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        payload = json.loads(resp.read().decode("utf-8", errors="replace"))
+    records = ((payload.get("data") or {}).get("diff") or [])
+    spot_map = _normalize_spot_records(records)
+    if not spot_map:
+        raise ValueError("eastmoney full spot returned empty")
+    return spot_map
+
+
+def _build_market_breadth_from_spot(spot: Dict[str, Dict[str, Any]], source: str = "akshare_full_spot") -> Dict[str, Any]:
+    changes = [row.get("change_pct") for row in spot.values() if isinstance(row.get("change_pct"), (int, float))]
+    amounts = [row.get("amount") for row in spot.values() if isinstance(row.get("amount"), (int, float))]
+    if not changes:
+        raise ValueError("full spot change_pct is empty")
+    advancers = sum(1 for value in changes if value > 0)
+    decliners = sum(1 for value in changes if value < 0)
+    flat_count = sum(1 for value in changes if value == 0)
+    universe_size = len(changes)
+    up_ratio = advancers / universe_size if universe_size else None
+    down_ratio = decliners / universe_size if universe_size else None
+    return {
+        "advancers": advancers,
+        "decliners": decliners,
+        "flat_count": flat_count,
+        "limit_up_count": sum(1 for value in changes if value >= 9.5),
+        "limit_down_count": sum(1 for value in changes if value <= -9.5),
+        "total_amount": round(sum(amounts), 2) if amounts else None,
+        "universe_size": universe_size,
+        "up_ratio": round(up_ratio, 4) if up_ratio is not None else None,
+        "down_ratio": round(down_ratio, 4) if down_ratio is not None else None,
+        "赚钱效应": "强" if up_ratio and up_ratio >= 0.58 else "弱" if up_ratio is not None and up_ratio <= 0.42 else "中性",
+        "source": source,
+    }
+
+
+def market_breadth_get() -> Dict[str, Any]:
+    cache_key = "market_breadth"
+    cached = _read_cache(cache_key, MARKET_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache")
+    try:
+        breadth = _build_market_breadth_from_spot(_load_full_spot())
+        _write_cache(cache_key, breadth)
+        return _ok(breadth, source="akshare")
+    except Exception as exc:
+        stale = _read_cache_stale(cache_key)
+        if stale is not None:
+            stale["error"] = f"使用过期市场宽度缓存: {exc}"
+            return _ok(stale, source="cache-stale")
+        return _fail(f"市场宽度获取异常: {exc}")
+
+
+def market_money_flow_get() -> Dict[str, Any]:
+    cache_key = "market_money_flow"
+    cached = _read_cache(cache_key, MARKET_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache")
+    try:
+        spot = _load_full_spot()
+        rows = list(spot.values())
+        amount_rows = [row for row in rows if isinstance(row.get("amount"), (int, float)) and row.get("amount") > 0]
+        signed_amount = 0.0
+        total_amount = 0.0
+        for row in amount_rows:
+            change = row.get("change_pct")
+            amount = row.get("amount")
+            if not isinstance(change, (int, float)) or not isinstance(amount, (int, float)):
+                continue
+            direction = 1 if change > 0 else -1 if change < 0 else 0
+            strength = min(abs(change) / 5.0, 1.0)
+            signed_amount += direction * strength * amount
+            total_amount += amount
+        proxy_score = signed_amount / total_amount if total_amount else 0.0
+        top_inflow = sorted(
+            [row for row in amount_rows if isinstance(row.get("change_pct"), (int, float)) and row.get("change_pct") > 0],
+            key=lambda row: row.get("amount") or 0,
+            reverse=True,
+        )[:10]
+        top_outflow = sorted(
+            [row for row in amount_rows if isinstance(row.get("change_pct"), (int, float)) and row.get("change_pct") < 0],
+            key=lambda row: row.get("amount") or 0,
+            reverse=True,
+        )[:10]
+        result = {
+            "name": "全市场量价资金代理",
+            "net": round(proxy_score, 4),
+            "unit": "proxy_score",
+            "direction": "inflow" if proxy_score > 0.03 else "outflow" if proxy_score < -0.03 else "flat",
+            "total_amount": round(total_amount, 2) if total_amount else None,
+            "sample_size": len(amount_rows),
+            "source": "akshare_full_spot",
+            "note": "由全市场成交额按涨跌幅方向加权构造，代表风险偏好代理，不等同真实主力净流入。",
+            "top_amount_risers": [{"code": r.get("code"), "name": r.get("name"), "change_pct": r.get("change_pct"), "amount": r.get("amount")} for r in top_inflow],
+            "top_amount_fallers": [{"code": r.get("code"), "name": r.get("name"), "change_pct": r.get("change_pct"), "amount": r.get("amount")} for r in top_outflow],
+        }
+        _write_cache(cache_key, result)
+        return _ok(result, source="akshare")
+    except Exception as exc:
+        stale = _read_cache_stale(cache_key)
+        if stale is not None:
+            stale["error"] = f"使用过期全市场资金代理缓存: {exc}"
+            return _ok(stale, source="cache-stale")
+        return _fail(f"全市场资金代理获取异常: {exc}")
+
+
+MARKET_PROXY_BASKET = [
+    "601211",
+    "002241",
+    "002414",
+    "002008",
+    "600118",
+    "302132",
+    "603218",
+    "600458",
+    "600549",
+    "000822",
+    "000737",
+    "600031",
+    "603063",
+    "002815",
+    "600406",
+    "688519",
+    "600519",
+    "300750",
+    "000858",
+    "601318",
+    "600036",
+    "000333",
+]
+
+
+def sampled_market_proxy_get(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+    sample_symbols = symbols or MARKET_PROXY_BASKET
+    items = []
+    errors = []
+    for symbol in sample_symbols:
+        result = _sample_quote_get(symbol)
+        data = result.get("data") or {}
+        change = _n(data.get("change_pct"))
+        amount = _n(data.get("amount"))
+        if change is None:
+            errors.append(f"{symbol} quote missing change_pct")
+            continue
+        items.append(
+            {
+                "code": symbol,
+                "name": data.get("name"),
+                "change_pct": change,
+                "amount": amount,
+            }
+        )
+    if len(items) < 8:
+        return _fail(f"抽样市场代理样本不足: {len(items)}", errors=errors)
+    advancers = sum(1 for item in items if item["change_pct"] > 0)
+    decliners = sum(1 for item in items if item["change_pct"] < 0)
+    flat_count = sum(1 for item in items if item["change_pct"] == 0)
+    total_amount = sum(item.get("amount") or 0 for item in items)
+    signed_amount = 0.0
+    amount_used = 0.0
+    for item in items:
+        amount = item.get("amount")
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            continue
+        direction = 1 if item["change_pct"] > 0 else -1 if item["change_pct"] < 0 else 0
+        strength = min(abs(item["change_pct"]) / 5.0, 1.0)
+        signed_amount += direction * strength * amount
+        amount_used += amount
+    flow_score = signed_amount / amount_used if amount_used else 0.0
+    return _ok(
+        {
+            "breadth": {
+                "advancers": advancers,
+                "decliners": decliners,
+                "flat_count": flat_count,
+                "universe_size": len(items),
+                "up_ratio": round(advancers / len(items), 4),
+                "down_ratio": round(decliners / len(items), 4),
+                "total_amount": round(total_amount, 2) if total_amount else None,
+                "source": "sampled_watchlist_plus_core",
+                "sampled": True,
+                "sample_codes": [item["code"] for item in items],
+            },
+            "flow": {
+                "name": "抽样量价资金代理",
+                "net": round(flow_score, 4),
+                "unit": "proxy_score",
+                "direction": "inflow" if flow_score > 0.03 else "outflow" if flow_score < -0.03 else "flat",
+                "sample_size": len(items),
+                "total_amount": round(total_amount, 2) if total_amount else None,
+                "source": "sampled_watchlist_plus_core",
+                "proxy": True,
+                "note": "由自选股和核心权重样本构造，只代表抽样赚钱效应，不等同全市场宽度。",
+            },
+            "items": items,
+            "errors": errors,
+        },
+        source="sampled-quotes",
+    )
+
+
+def _sample_quote_get(symbol: str) -> Dict[str, Any]:
+    symbol = symbol.zfill(6)
+    try:
+        return quote_get(symbol)
+    except Exception:
+        pass
+    browser_script = WORKSPACE / "skills" / "stock-data" / "scripts" / "browser_fetch.py"
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(browser_script), symbol, "auto"],
+            cwd=str(WORKSPACE),
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if completed.stdout.strip():
+            return json.loads(completed.stdout)
+        return {"success": False, "error": completed.stderr.strip() or "empty browser quote"}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
 
 def _n(val: Any) -> Optional[float]:
@@ -446,13 +724,29 @@ def market_index_get() -> Dict[str, Any]:
                         prev = frame.iloc[-2]
                         pre_close = _n(prev.get("close", prev.get("收盘")))
                     change_pct = round((close - pre_close) / pre_close * 100, 2) if close and pre_close and pre_close != 0 else None
+                    closes = [_n(v) for v in frame["close"].tail(21).tolist()] if "close" in frame else []
+                    amounts = [_n(v) for v in frame["amount"].tail(6).tolist()] if "amount" in frame else []
+                    change_5d = None
+                    change_20d = None
+                    amount_latest = amounts[-1] if amounts else _n(last.get("amount", last.get("成交额")))
+                    amount_avg_5d = None
+                    if close and len(closes) >= 6 and closes[-6]:
+                        change_5d = round((close - closes[-6]) / closes[-6] * 100, 2)
+                    if close and len(closes) >= 21 and closes[-21]:
+                        change_20d = round((close - closes[-21]) / closes[-21] * 100, 2)
+                    if len(amounts) >= 5:
+                        amount_avg_5d = round(sum(v or 0 for v in amounts[-5:]) / 5, 2)
                     indices.append(
                         {
                             "code": code,
                             "name": name,
                             "price": close,
                             "change_pct": change_pct,
+                            "change_5d": change_5d,
+                            "change_20d": change_20d,
                             "volume": _n(last.get("volume", last.get("成交量"))),
+                            "amount": amount_latest,
+                            "amount_avg_5d": amount_avg_5d,
                             "high": _n(last.get("high", last.get("最高"))),
                             "low": _n(last.get("low", last.get("最低"))),
                             "date": str(last.get("date", "")),
@@ -463,7 +757,17 @@ def market_index_get() -> Dict[str, Any]:
             except Exception as e:
                 indices.append({"code": code, "name": name, "error": str(e)})
 
-        result = {"indices": indices, "count": len(indices)}
+        breadth: Dict[str, Any] = {}
+        try:
+            breadth = _build_market_breadth_from_spot(_load_full_spot())
+            _write_cache("market_breadth", breadth)
+        except Exception as exc:
+            stale_breadth = _read_cache_stale("market_breadth")
+            breadth = stale_breadth if isinstance(stale_breadth, dict) else {"error": f"市场广度获取失败: {exc}"}
+            if isinstance(breadth, dict) and "error" not in breadth:
+                breadth["error"] = f"使用过期市场宽度缓存: {exc}"
+
+        result = {"indices": indices, "count": len(indices), "breadth": breadth}
         _write_cache(cache_key, result)
         return _ok(result, source="akshare")
 
@@ -498,6 +802,99 @@ def sector_get(symbol: str) -> Dict[str, Any]:
 
     except Exception as e:
         return _fail(f"板块获取异常: {e}", symbol=symbol)
+
+
+def sector_context_get(symbol: str) -> Dict[str, Any]:
+    """获取行业上下文：板块热度 + 同行对比 + 个股行业排名"""
+    symbol = symbol.zfill(6)
+    cache_key = f"sector_ctx_{symbol}"
+    cached = _read_cache(cache_key, SECTOR_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache", symbol=symbol)
+
+    # 1. 先获取行业名称
+    sector_result = sector_get(symbol)
+    if not sector_result.get("success"):
+        return sector_result
+
+    industry = sector_result["data"]["industry"]
+    if not industry:
+        return _fail(f"无法确定 {symbol} 行业", symbol=symbol)
+
+    import akshare as ak
+
+    try:
+        # 2. 获取行业板块热度 + 成分股
+        heat = sector_heat_get(industry)
+        if not heat.get("success"):
+            return heat
+
+        heat_data = heat["data"]
+        members = heat_data.get("members", [])
+
+        # 3. 找个股在行业中的排名
+        stock_rank = None
+        stock_info = None
+        for i, m in enumerate(members):
+            if m.get("code", "").zfill(6) == symbol:
+                # 按涨跌幅排序
+                sorted_members = sorted(members, key=lambda x: x.get("change_pct") or -999, reverse=True)
+                for j, sm in enumerate(sorted_members):
+                    if sm.get("code", "").zfill(6) == symbol:
+                        stock_rank = j + 1
+                        break
+                stock_info = m
+                break
+
+        # 如果没有找到自己的股票，用行情接口补
+        if stock_info is None:
+            spot = _load_full_spot()
+            row = spot.get(symbol)
+            if row:
+                stock_info = {
+                    "code": symbol,
+                    "name": row.get("name", ""),
+                    "price": row.get("price"),
+                    "change_pct": row.get("change_pct"),
+                }
+
+        # 4. 计算行业内部相对强弱
+        peer_changes = [m.get("change_pct") for m in members if m.get("change_pct") is not None]
+        if peer_changes and stock_info and stock_info.get("change_pct") is not None:
+            avg_peer = sum(peer_changes) / len(peer_changes)
+            relative_strength = round(stock_info["change_pct"] - avg_peer, 2)
+            peer_rank_pct = round(stock_rank / len(members) * 100, 1) if stock_rank and members else None
+        else:
+            relative_strength = None
+            peer_rank_pct = None
+
+        result = {
+            "symbol": symbol,
+            "industry": industry,
+            "sector_heat": {
+                "name": heat_data.get("name", industry),
+                "change_pct": heat_data.get("change_pct"),
+                "up_count": heat_data.get("up_count"),
+                "down_count": heat_data.get("down_count"),
+                "main_flow": heat_data.get("main_flow"),
+                "amount": heat_data.get("amount"),
+            },
+            "peers": members[:10],  # 前10只同业股票
+            "stock_position": {
+                "rank": stock_rank,
+                "total": len(members),
+                "rank_pct": peer_rank_pct,
+                "relative_strength": relative_strength,  # 正=强于行业, 负=弱于行业
+                "change_pct": stock_info.get("change_pct") if stock_info else None,
+            },
+        }
+        _write_cache(cache_key, result)
+        return _ok(result, source="akshare", symbol=symbol)
+
+    except Exception as e:
+        # 降级：至少返回行业名称
+        return _ok({"symbol": symbol, "industry": industry, "note": f"行业上下文获取部分失败: {e}"},
+                  source="akshare", symbol=symbol)
 
 
 def sector_heat_get(sector_name: str) -> Dict[str, Any]:
@@ -635,7 +1032,6 @@ def margin_get(symbol: str) -> Dict[str, Any]:
 
 
 def fund_flow_get(symbol: str) -> Dict[str, Any]:
-    """获取资金流向"""
     symbol = symbol.zfill(6)
     cache_key = f"flow_{symbol}"
     cached = _read_cache(cache_key, SECTOR_TTL_SEC)
@@ -774,15 +1170,197 @@ def financial_trend_get(symbol: str, periods: int = 8) -> Dict[str, Any]:
         return _fail(f"财务趋势获取异常: {e}", symbol=symbol)
 
 
+def north_south_flow_get() -> Dict[str, Any]:
+    """获取北向/南向资金流向汇总"""
+    cache_key = "north_south_flow"
+    cached = _read_cache(cache_key, NORTH_SOUTH_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache")
+
+    import akshare as ak
+
+    try:
+        frame = ak.stock_hsgt_fund_flow_summary_em()
+        if frame is None or frame.empty:
+            return _fail("北向南向资金数据为空")
+
+        records: List[Dict[str, Any]] = []
+        for _, row in frame.iterrows():
+            records.append({
+                "date": str(row.get("交易日", "")),
+                "type": str(row.get("类型", "")),          # 沪港通/深港通
+                "board": str(row.get("板块", "")),         # 沪股通/深股通/港股通
+                "direction": str(row.get("资金方向", "")), # 北向/南向
+                "net_buy": _n(row.get("成交净买额")),      # 亿元
+                "net_inflow": _n(row.get("资金净流入")),    # 亿元
+                "quota_remaining": _n(row.get("当日资金余额")),
+                "up_count": int(row.get("上涨数", 0)),
+                "down_count": int(row.get("下跌数", 0)),
+                "index_change": _n(row.get("指数涨跌幅")),
+            })
+
+        # 按日期分组
+        by_date: Dict[str, List[Dict[str, Any]]] = {}
+        for r in records:
+            by_date.setdefault(r["date"], []).append(r)
+
+        latest_date = max(by_date.keys()) if by_date else ""
+        latest = by_date.get(latest_date, [])
+
+        result = {
+            "latest_date": latest_date,
+            "daily": latest,
+            "summary": _summarize_north_south(latest),
+            "count": len(records),
+        }
+        _write_cache(cache_key, result)
+        return _ok(result, source="akshare")
+    except Exception as e:
+        return _fail(f"北向南向资金异常: {e}")
+
+
+def _summarize_north_south(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    north = [r for r in rows if r["direction"] == "北向"]
+    south = [r for r in rows if r["direction"] == "南向"]
+    return {
+        "north_net": round(sum(r.get("net_buy") or 0 for r in north), 2),
+        "south_net": round(sum(r.get("net_buy") or 0 for r in south), 2),
+        "north_detail": north,
+        "south_detail": south,
+    }
+
+
+def stock_fund_flow_hist_get(symbol: str, days: int = 20) -> Dict[str, Any]:
+    """获取个股资金流向历史（主力/超大单/大单/中单/小单）"""
+    symbol = symbol.zfill(6)
+    cache_key = f"fund_flow_hist_{symbol}_{days}"
+    cached = _read_cache(cache_key, SECTOR_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache", symbol=symbol)
+
+    import akshare as ak
+
+    try:
+        frame = ak.stock_individual_fund_flow(stock=symbol, market="sh" if symbol.startswith(("6", "9")) else "sz")
+        if frame is None or frame.empty:
+            return _fail(f"无法获取 {symbol} 资金流向历史", symbol=symbol)
+
+        records: List[Dict[str, Any]] = []
+        for _, row in frame.tail(days).iterrows():
+            records.append({
+                "date": str(row.get("日期", "")),
+                "close": _n(row.get("收盘价")),
+                "change_pct": _n(row.get("涨跌幅")),
+                "main_net": _n(row.get("主力净流入-净额")),
+                "main_pct": _n(row.get("主力净流入-净占比")),
+                "super_large_net": _n(row.get("超大单净流入-净额")),
+                "super_large_pct": _n(row.get("超大单净流入-净占比")),
+                "large_net": _n(row.get("大单净流入-净额")),
+                "large_pct": _n(row.get("大单净流入-净占比")),
+                "medium_net": _n(row.get("中单净流入-净额")),
+                "medium_pct": _n(row.get("中单净流入-净占比")),
+                "small_net": _n(row.get("小单净流入-净额")),
+                "small_pct": _n(row.get("小单净流入-净占比")),
+            })
+
+        # 计算近期指标
+        recent_main = [r.get("main_net") or 0 for r in records[-5:]]
+        recent_super = [r.get("super_large_net") or 0 for r in records[-5:]]
+
+        result = {
+            "symbol": symbol,
+            "bars": records,
+            "count": len(records),
+            "recent_5d": {
+                "main_net_sum": round(sum(recent_main), 0),
+                "main_net_avg": round(sum(recent_main) / len(recent_main), 0) if recent_main else 0,
+                "super_large_net_sum": round(sum(recent_super), 0),
+            },
+        }
+        _write_cache(cache_key, result)
+        return _ok(result, source="akshare", symbol=symbol)
+    except Exception as e:
+        return _fail(f"资金流向历史异常: {e}", symbol=symbol)
+
+
+def lhb_stock_get(symbol: str) -> Dict[str, Any]:
+    """获取个股龙虎榜记录（营业部操作明细）"""
+    symbol = symbol.zfill(6)
+    cache_key = f"lhb_{symbol}"
+    cached = _read_cache(cache_key, LHB_TTL_SEC)
+    if cached is not None:
+        return _ok(cached, source="cache", symbol=symbol)
+
+    import akshare as ak
+    from datetime import datetime, timedelta
+
+    try:
+        end = datetime.now().strftime("%Y%m%d")
+        start = (datetime.now() - timedelta(days=90)).strftime("%Y%m%d")
+
+        # 用 stock_lhb_detail_em 获取全量再过滤
+        frame = ak.stock_lhb_detail_em(start_date=start, end_date=end)
+        if frame is None or frame.empty:
+            return _ok({"symbol": symbol, "records": [], "count": 0, "note": "近期无龙虎榜数据"},
+                      source="akshare", symbol=symbol)
+
+        # 过滤该股票
+        mask = frame['代码'].astype(str).str.zfill(6) == symbol
+        stock_frame = frame[mask]
+
+        if stock_frame.empty:
+            return _ok({"symbol": symbol, "records": [], "count": 0, "note": "近期未上榜"},
+                      source="akshare", symbol=symbol)
+
+        records: List[Dict[str, Any]] = []
+        for _, row in stock_frame.iterrows():
+            records.append({
+                "date": str(row.get("上榜日", "")),
+                "name": str(row.get("名称", "")),
+                "reason": str(row.get("上榜原因", "")),
+                "interpretation": str(row.get("解读", "")),
+                "close": _n(row.get("收盘价")),
+                "change_pct": _n(row.get("涨跌幅")),
+                "net_amount": _n(row.get("龙虎榜净买额")),
+                "buy_amount": _n(row.get("龙虎榜买入额")),
+                "sell_amount": _n(row.get("龙虎榜卖出额")),
+                "total_amount": _n(row.get("龙虎榜成交额")),
+                "market_amount": _n(row.get("市场总成交额")),
+                "net_pct": _n(row.get("净买额占总成交比")),
+                "turnover": _n(row.get("换手率")),
+                "float_cap": _n(row.get("流通市值")),
+                "after_1d": _n(row.get("上榜后1日")),
+                "after_2d": _n(row.get("上榜后2日")),
+                "after_5d": _n(row.get("上榜后5日")),
+                "after_10d": _n(row.get("上榜后10日")),
+            })
+
+        result = {
+            "symbol": symbol,
+            "records": records,
+            "count": len(records),
+            "latest": records[0] if records else None,
+        }
+        _write_cache(cache_key, result)
+        return _ok(result, source="akshare", symbol=symbol)
+    except Exception as e:
+        return _ok({"symbol": symbol, "records": [], "count": 0, "note": str(e)[:100]},
+                  source="akshare", symbol=symbol)
+
+
 def analysis_payload_get(symbol: str) -> Dict[str, Any]:
     """聚合正式分析所需证据包"""
     symbol = symbol.zfill(6)
     sections: Dict[str, Dict[str, Any]] = {
         "quote": quote_get(symbol),
         "market": market_index_get(),
-        "sector": sector_get(symbol),
+        "sector": sector_context_get(symbol),  # 含板块热度+同行排名+相对强弱
         "finance": financial_get(symbol),
         "flow": fund_flow_get(symbol),
+        "flow_hist_10": stock_fund_flow_hist_get(symbol, 10),
+        "margin": margin_get(symbol),
+        "north_south": north_south_flow_get(),
+        "lhb": lhb_stock_get(symbol),
         "kline_daily": kline_get(symbol, 120, "daily"),
         "kline_weekly": kline_get(symbol, 104, "weekly"),
         "kline_monthly": kline_get(symbol, 60, "monthly"),
@@ -813,7 +1391,12 @@ def analysis_payload_get(symbol: str) -> Dict[str, Any]:
         "quote": sections["quote"].get("data"),
         "market": sections["market"].get("data"),
         "sector": sections["sector"].get("data"),
+        "market_context": _market_context_summary(sections),  # 大盘+行业联动分析
         "fund_flow": sections["flow"].get("data"),
+        "fund_flow_hist_10": sections["flow_hist_10"].get("data"),
+        "margin": sections["margin"].get("data"),
+        "north_south_flow": sections["north_south"].get("data"),
+        "lhb": sections["lhb"].get("data"),
         "fundamental_valuation": sections["finance"].get("data"),
         "fundamental_trend": sections["financial_trend"].get("data"),
         "kline_daily": sections["kline_daily"].get("data"),
@@ -890,12 +1473,19 @@ def main() -> None:
         print("  kline <代码> [天数=60]   获取日线 K 线", file=sys.stderr)
         print("  klinex <代码> [周期] [条数] 获取指定周期 K 线", file=sys.stderr)
         print("  market                  获取大盘指数", file=sys.stderr)
+        print("  breadth                 获取市场宽度/赚钱效应", file=sys.stderr)
+        print("  market-flow             获取全市场量价资金代理", file=sys.stderr)
+        print("  market-proxy [代码...]  抽样市场宽度和资金代理", file=sys.stderr)
         print("  sector <代码>           获取所属行业", file=sys.stderr)
+        print("  sector-ctx <代码>        获取行业上下文（板块热度+同行排名+相对强弱）", file=sys.stderr)
         print("  heat <板块名>           获取板块热度", file=sys.stderr)
         print("  finance <代码>          获取财务指标", file=sys.stderr)
         print("  finance-trend <代码>    获取季度财务趋势", file=sys.stderr)
         print("  margin <代码>           获取融资融券", file=sys.stderr)
         print("  flow <代码>             获取资金流向", file=sys.stderr)
+        print("  flow-hist <代码> [天数]  获取个股资金流向历史", file=sys.stderr)
+        print("  north-south             获取北向/南向资金", file=sys.stderr)
+        print("  lhb <代码>              获取个股龙虎榜记录", file=sys.stderr)
         print("  intraday <代码> [1|5] [天数] 获取分时数据", file=sys.stderr)
         print("  analysis <代码>         获取正式分析证据包", file=sys.stderr)
         print("  snapshot <代码1>...     自选股快照（含行业、PE/PB）", file=sys.stderr)
@@ -920,8 +1510,16 @@ def main() -> None:
             result = kline_get(sys.argv[2], days, period)
         elif cmd == "market":
             result = market_index_get()
+        elif cmd == "breadth":
+            result = market_breadth_get()
+        elif cmd == "market-flow":
+            result = market_money_flow_get()
+        elif cmd == "market-proxy":
+            result = sampled_market_proxy_get(sys.argv[2:] or None)
         elif cmd == "sector" and len(sys.argv) >= 3:
             result = sector_get(sys.argv[2])
+        elif cmd == "sector-ctx" and len(sys.argv) >= 3:
+            result = sector_context_get(sys.argv[2])
         elif cmd == "heat" and len(sys.argv) >= 3:
             result = sector_heat_get(sys.argv[2])
         elif cmd == "finance" and len(sys.argv) >= 3:
@@ -932,6 +1530,13 @@ def main() -> None:
             result = margin_get(sys.argv[2])
         elif cmd == "flow" and len(sys.argv) >= 3:
             result = fund_flow_get(sys.argv[2])
+        elif cmd == "flow-hist" and len(sys.argv) >= 3:
+            days = int(sys.argv[3]) if len(sys.argv) >= 4 else 20
+            result = stock_fund_flow_hist_get(sys.argv[2], days)
+        elif cmd == "north-south":
+            result = north_south_flow_get()
+        elif cmd == "lhb" and len(sys.argv) >= 3:
+            result = lhb_stock_get(sys.argv[2])
         elif cmd == "intraday" and len(sys.argv) >= 3:
             interval = sys.argv[3] if len(sys.argv) >= 4 else "1"
             days = int(sys.argv[4]) if len(sys.argv) >= 5 else 3

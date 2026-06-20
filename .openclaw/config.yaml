@@ -1,6 +1,10 @@
 agents:
   defaults:
     timeoutSeconds: 180
+
+skills:
+  - name: vibe-trading
+    command: ${WIN_STOCK_VIBE_MCP_COMMAND:-${VIBE_MCP_COMMAND:-vibe-trading-mcp}}
     
 cronJobs:
   - name: stock-morning-analysis

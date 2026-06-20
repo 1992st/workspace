@@ -3,12 +3,14 @@ from __future__ import annotations
 from typing import Callable, Dict
 
 from base import BaseSkill
+from prediction_skill import PredictionSkill
 from stock_skill import StockSkill
 
 
 class SkillRegistry:
     def __init__(self) -> None:
         self._factories: Dict[str, Callable[[], BaseSkill]] = {
+            "prediction": PredictionSkill,
             "stock": StockSkill,
         }
         self._instances: Dict[str, BaseSkill] = {}

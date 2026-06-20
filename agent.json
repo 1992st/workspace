@@ -11,7 +11,9 @@
     "stock-analysis",
     "daily-review",
     "news-analysis",
-    "feishu-notify"
+    "feishu-notify",
+    "market-sector-prediction",
+    "vibe-trading"
   ],
   "watchlist": [
     {
@@ -149,6 +151,26 @@
       "name": "evening-news-analysis",
       "schedule": "0 20 * * 1-5",
       "description": "晚间新闻分析"
+    },
+    {
+      "name": "vibe-market-open-scan",
+      "schedule": "35 9 * * 1-5",
+      "description": "开盘后调用 Vibe-Trading 生成大盘环境预测"
+    },
+    {
+      "name": "vibe-sector-rotation-monitor",
+      "schedule": "30 10,14 * * 1-5",
+      "description": "盘中调用 Vibe-Trading 监控板块轮动和退潮信号"
+    },
+    {
+      "name": "vibe-aftermarket-prediction-review",
+      "schedule": "30 16 * * 1-5",
+      "description": "收盘后验证大盘与板块预测并沉淀方法"
+    },
+    {
+      "name": "vibe-weekly-method-digest",
+      "schedule": "0 18 * * 5",
+      "description": "每周统计预测准确率、失效模式和方法升级建议"
     }
   ],
   "dataSources": [

@@ -1,0 +1,194 @@
+{
+  "skill": {
+    "name": "stock-skill",
+    "description": "Win_Stock 统一股票数据技能 - 提供可缓存、可降级、可追溯的 A 股接口",
+    "path": "/Volumes/zhangstExtern/openclaw/workspace/win_stock/skills/stock-skill",
+    "mode": "script-flow",
+    "flow_source": "semantic_agent",
+    "flow_spec": "/Volumes/zhangstExtern/openclaw/workspace/win_stock/skills/stock-skill/viewer-flow-spec.json",
+    "triggers": []
+  },
+  "summary": {
+    "errors": 0,
+    "warnings": 6,
+    "info": 21
+  },
+  "adversarial_review": {
+    "status": "pass",
+    "summary": "Capabilities are data domain categories matching the 21 actions. Each has action count evidence. Two flows cover runtime execution and analysis pipeline. All 9 sections justified.",
+    "blocking_findings": [],
+    "non_blocking_findings": [],
+    "checked_dimensions": [
+      "capability-vs-flow",
+      "trigger-vs-feature",
+      "section-overreach",
+      "evidence-gaps",
+      "tuning-value",
+      "layout-mismatch"
+    ]
+  },
+  "findings": [
+    {
+      "severity": "warning",
+      "code": "feature-without-trigger",
+      "message": "Feature should list trigger groups or trigger conditions: 行情数据",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "warning",
+      "code": "feature-without-trigger",
+      "message": "Feature should list trigger groups or trigger conditions: 资金流向",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "info",
+      "code": "weak-feature-abstraction",
+      "message": "Feature may still be too close to a single flow step; verify it is a capability abstraction: 资金流向",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "warning",
+      "code": "feature-without-trigger",
+      "message": "Feature should list trigger groups or trigger conditions: 新闻与公告",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "info",
+      "code": "weak-feature-abstraction",
+      "message": "Feature may still be too close to a single flow step; verify it is a capability abstraction: 新闻与公告",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "warning",
+      "code": "feature-without-trigger",
+      "message": "Feature should list trigger groups or trigger conditions: 基本面",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "info",
+      "code": "weak-feature-abstraction",
+      "message": "Feature may still be too close to a single flow step; verify it is a capability abstraction: 基本面",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "warning",
+      "code": "feature-without-trigger",
+      "message": "Feature should list trigger groups or trigger conditions: 深度分析",
+      "path": "viewer-flow-spec.json"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "scripts/run.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/__init__.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/analysis_engine.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/analysis_resources.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/analysis_validation.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/base.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/providers/__init__.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/providers/akshare_provider.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/providers/http_provider.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/registry.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/__init__.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/cache.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/contracts.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/failure_log.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/health.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/shared/utils.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "skill_runtime/stock_skill.py"
+    },
+    {
+      "severity": "info",
+      "code": "script-review",
+      "message": "Check script dependencies, inputs, outputs, and safety boundaries.",
+      "path": "tests/test_stock_skill.py"
+    },
+    {
+      "severity": "warning",
+      "code": "absolute-path",
+      "message": "File contains absolute paths; verify they are intentional or parameterized.",
+      "path": "DESIGN.md"
+    }
+  ]
+}
