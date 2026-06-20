@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Local environment files
 .env
@@ -15,21 +18,65 @@ __pycache__/
 logs/**
 *.jsonl
 
+# OpenClaw local runtime state
+.openclaw/workspace-state.json
+.openclaw/**/*.state.json
+.openclaw/**/*.session.json
+.openclaw/**/*.runtime.json
+.openclaw/cache/
+.openclaw/logs/
+.openclaw/tmp/
+.openclaw/sessions/
+.openclaw/state/
+.agents/
+.codex/
+
+# Local memory and session artifacts
+memory/
+DREAMS.md
+
+# Local exports and backups
+exports/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.sha256
+
 # Local databases and generated state
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-shm
+*.sqlite3-wal
 
 # Generated reports and review outputs
 data/reports/
 reviews/daily/
+reviews/morning/
 reviews/weekly/
+*.delivery.json
 
 # Runtime caches and snapshots
 data/cache/
 data/market/cache/
-memory/
+data/health/
+data/market/predictions/
+data/market/reviews/
+data/sectors/predictions/
+data/sectors/reviews/
+data/sectors/snapshots/
+data/predictions/cache/
+data/predictions/vibe_runs/
 *.bak
+*.tmp
+*.temp
+*.swp
+*.swo
 
 # Active watchlist generated artifacts
 data/watchlist/active/*/analysis/
@@ -46,10 +93,11 @@ watchlist/*/analysis/
 watchlist/*/history/
 watchlist/*/special/
 watchlist/
-DREAMS.md
 
 # Skill runtime outputs
 skills/stock-skill/runtime_data/
+skills/*/runtime_data/
+skills/*/.runtime/
 
 # Book runtime caches only
 books/runtime/__pycache__/
