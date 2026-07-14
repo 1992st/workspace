@@ -19,6 +19,7 @@ logs/**
 *.jsonl
 
 # OpenClaw local runtime state
+openclaw-workspace-state.json
 .openclaw/workspace-state.json
 .openclaw/**/*.state.json
 .openclaw/**/*.session.json
@@ -56,6 +57,7 @@ exports/
 
 # Generated reports and review outputs
 data/reports/
+reviews/*.md
 reviews/daily/
 reviews/morning/
 reviews/weekly/
@@ -67,6 +69,7 @@ data/market/cache/
 data/health/
 data/market/predictions/
 data/market/reviews/
+data/sectors/*.json
 data/sectors/predictions/
 data/sectors/reviews/
 data/sectors/snapshots/
