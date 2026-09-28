@@ -1,0 +1,54 @@
+{
+  "indices": [
+    {
+      "code": "000001",
+      "market_code": "sh000001",
+      "name": "上证指数",
+      "price": 3946.68,
+      "change": 12.59,
+      "change_pct": 0.32,
+      "open": 3933.55,
+      "high": 3950.62,
+      "low": 3927.55,
+      "pre_close": 3934.09,
+      "volume": 503257011,
+      "amount": 986122393817,
+      "timestamp": "2026-08-12T15:52:02"
+    },
+    {
+      "code": "399001",
+      "market_code": "sz399001",
+      "name": "深证成指",
+      "price": 14414.43,
+      "change": 154.99,
+      "change_pct": 1.09,
+      "open": 14253.12,
+      "high": 14467.0,
+      "low": 14237.2,
+      "pre_close": 14259.44,
+      "volume": 625395865,
+      "amount": 1166300715998,
+      "timestamp": "2026-08-12T15:52:30"
+    },
+    {
+      "code": "399006",
+      "market_code": "sz399006",
+      "name": "创业板指",
+      "price": 3602.08,
+      "change": 52.92,
+      "change_pct": 1.49,
+      "open": 3542.13,
+      "high": 3625.27,
+      "low": 3540.95,
+      "pre_close": 3549.16,
+      "volume": 183438948,
+      "amount": 561500226977,
+      "timestamp": "2026-08-12T15:51:45"
+    }
+  ],
+  "count": 3,
+  "breadth": {
+    "status": "missing",
+    "reason": "Tencent index fallback does not provide market breadth"
+  }
+}

@@ -1,6 +1,7 @@
 # Python caches and test artifacts
 __pycache__/
 *.py[cod]
+.DS_Store
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -83,19 +84,26 @@ data/predictions/vibe_runs/
 
 # Active watchlist generated artifacts
 data/watchlist/active/*/analysis/
+data/watchlist/active/*/history/
 data/watchlist/active/*/predictions/
 data/watchlist/active/*/reviews/
 data/watchlist/active/*/special/
+data/watchlist/active/*/predictions_tracker.md
 data/watchlist/active/*/*_db.sqlite
 data/watchlist/active/*/*_分析.md
 data/watchlist/active/*/*_股东资金关联分析.md
 data/watchlist/active/*/*_公告原文.pdf
+data/watchlist/active/*.md
+data/watchlist/active/_*.md
+data/watchlist/active/group/
+data/watchlist/_portfolio/
+data/watchlist/scans/
 
 # Top-level watchlist generated artifacts
-watchlist/*/analysis/
-watchlist/*/history/
-watchlist/*/special/
-watchlist/
+/watchlist/*/analysis/
+/watchlist/*/history/
+/watchlist/*/special/
+/watchlist/
 
 # Skill runtime outputs
 skills/stock-skill/runtime_data/

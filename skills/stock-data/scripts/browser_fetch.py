@@ -467,7 +467,7 @@ def fetch_eastmoney_quote(symbol: str) -> Dict[str, Any]:
     url = (
         "https://push2.eastmoney.com/api/qt/stock/get"
         f"?secid={market}.{symbol}"
-        "&fields=f43,f44,f45,f46,f47,f48,f57,f58,f60,f169,f170,f168"
+        "&fields=f43,f44,f45,f46,f47,f48,f57,f58,f60,f169,f170,f168,f62,f184,f66,f72,f78,f84"
     )
     try:
         raw = _request_text(
@@ -488,6 +488,12 @@ def fetch_eastmoney_quote(symbol: str) -> Dict[str, Any]:
             if value in (None, ""):
                 return None
             return float(value) / 100
+
+        def em_raw(field: str) -> Optional[float]:
+            value = data.get(field)
+            if value in (None, "", "-"):
+                return None
+            return float(value)
 
         price = em_float("f43")
         pre_close = em_float("f60")
@@ -516,6 +522,12 @@ def fetch_eastmoney_quote(symbol: str) -> Dict[str, Any]:
                 "volume": data.get("f47"),
                 "amount": data.get("f48"),
                 "turnover_rate": em_float("f168"),
+                "main_net_inflow": em_raw("f62"),
+                "main_net_ratio": em_raw("f184"),
+                "super_large_net": em_raw("f66"),
+                "large_net": em_raw("f72"),
+                "medium_net": em_raw("f78"),
+                "small_net": em_raw("f84"),
                 "timestamp": datetime.now().isoformat(timespec="seconds"),
             },
             "quality_score": 84,

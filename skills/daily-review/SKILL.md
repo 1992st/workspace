@@ -4,6 +4,22 @@ description: Win_Stock 每日复盘 Skill - 收盘后自动复盘，验证预测
 version: 2.0
 ---
 
+## Case-based adversarial review (current)
+
+The executable review unit is an immutable prediction case, not a Markdown report. A case identifies one symbol, decision time, data cutoff, horizon, snapshot, prompt version, and rule version. Intraday updates create a new case with `parent_case_id`; they never overwrite the previous prediction.
+
+Use the append-only store and validator:
+
+```text
+skills/daily-review/case_store.py
+skills/daily-review/scripts/adversarial_audit.py
+skills/daily-review/scripts/case_pipeline.py
+```
+
+Inputs are separated by lifecycle: `facts` and `features` are frozen before `prediction`; `audit` may downgrade or block a decision but cannot modify it; `outcome` is written only after the prediction horizon expires and cannot be used to rewrite the original facts, score, confidence, or reasoning. Every fact requires a source and source time not later than `data_cutoff`; every feature requires a formula and fact references.
+
+The review pipeline must mechanically reject time leakage, missing case boundaries, non-falsifiable direction language, predictions without invalidation conditions, and any attempt to replace an existing prediction. A failed audit produces `blocked` or `degraded`; it is not repaired by adding a narrative explanation. The old Markdown-only accuracy examples below are historical guidance and must not be used as the source of truth when a case record exists.
+
 # 每日复盘 Skill
 
 ## 核心原则
@@ -52,11 +68,12 @@ version: 2.0
          │
          ▼
 ┌─────────────────┐
-│ 3. 更新股性理解  │ ← 写入 stock_character 表
+│ 3. 更新个股特征  │ ← 重写 profile.md（特征全量快照）
 │ • 波动特征      │
 │ • 资金特征      │
 │ • 消息敏感度    │
 │ • 技术特征      │
+│ • 主力/盘口特征 │
 └────────┬────────┘
          │
          ▼
@@ -69,9 +86,9 @@ version: 2.0
          │
          ▼
 ┌─────────────────┐
-│ 5. 更新股票档案  │ ← 更新 profile.md
+│ 5. 确认档案完成  │ ← profile.md 已全量重写
 │ • 最新复盘索引  │
-│ • 股性观察更新  │
+│ • 特征快照更新  │
 └────────┬────────┘
          │
          ▼
@@ -143,6 +160,15 @@ def calculate_returns(prediction, actual):
     }
 ```
 
+## 概率校准规则（2026-08-18 强制新增）
+
+预测时给出的**方向概率**必须事后核对，防止系统性低估风险：
+
+1. **每次复盘核对**：预测时的方向概率（如情景A/B/C）vs 实际发生的结果，记入 `predictions_tracker.md` 校准列
+2. **低估惩罚**：连续 2 次低估“破位/下跌”概率 → 该股磨底期破位概率下限自动上调（30%→40%）
+3. **历史锚点（勿忘）**：2026-08-17 给国泰海通情景C破位=20%，次日即发生 → 磨底期破位概率下限 30% 已生效
+4. **校准表格式**：日期 | 预测概率 | 实际结果 | 偏差 | 修正动作
+
 ## 偏差分析框架
 
 ### 偏差原因分类
@@ -213,55 +239,52 @@ INSERT INTO review_log (
 );
 ```
 
-## 股性理解积累
+## 个股特征积累（每只股票一份特征快照）
 
-### 股性特征记录
+### 载体与原则
 
-```sql
--- stock_character 表记录
-INSERT INTO stock_character (
-    observation_date,
-    character_type,
-    description,
-    evidence,
-    confidence
-) VALUES 
--- 波动特征
-('2026-04-24', 'volatile', '波动率中等，日内振幅1.5%', '近20日平均振幅1.8%', 4),
+- **载体**：`data/watchlist/active/{code}/profile.md`，每只股票一份，作为该股"当前特征"的唯一快照。
+- **不用 sqlite**：不维护 `stock_character` 表，特征直接落在 profile.md。
+- **全量重写，不增量追加**：每次复盘/深度分析后，重写 profile.md 的特征部分，而不是只加一两行，避免新旧数据混杂、特征分散。
+- **落盘不强制字段**：以下特征清单是"应关注并总结"的维度，具体字段/表格形式由 Agent 按该股实际情况组织，不做硬性格式限制。
 
--- 资金特征  
-('2026-04-24', 'institutional_favorite', '机构持仓集中，主力控盘明显', '前十大股东持股65%', 4),
+### 特征总结方法（复盘时必须做）
 
--- 消息敏感度
-('2026-04-24', 'news_sensitive', '对重组消息极度敏感', '重组公告后3日涨幅15%', 5),
+复盘不是"记录今天涨跌"，而是**重新查证据、重新归纳该股的特征**。步骤：
 
--- 技术特征
-('2026-04-24', 'momentum', '突破MA20后惯性上涨2-3天', '近5次突破MA20，4次后续2日上涨', 3);
-```
+1. **回看证据**：拉该股近期 K 线、资金流、盘口，用真实数据说话，不凭印象。
+2. **归纳手法**：把零散的盘面现象总结成规律（如"主力夹板吸筹""拉高派发""波段高抛低吸"），每条规律都要有至少一个实盘证据支撑。
+3. **定位当前阶段**：磨底/拉升/出货/横盘/破位，并给出判断依据。
+4. **标注异常**：若出现盘口、资金、量价的异常（如夹板、地量拉升、放量长阴），单独详细描述。
+5. **全量重写**：把新的特征快照整段重写进 profile.md，短线状态（当前阶段/关键价位/操作建议）刷新，长期股性规律（主力手法/股性标签）保留并更新。
 
-### 股性档案更新
+### 需要关注的特征维度（清单）
 
-每次复盘后更新 `profile.md`：
+复盘和特征总结时，至少覆盖以下维度，有则记、无则标"无"：
+
+| 维度 | 要回答的问题 | 举例 |
+|------|-------------|------|
+| 股性本质 | 它是什么类型的票？ | 波段振幅票 / 趋势票 / 情绪票 / 白马慢牛 |
+| 主力手法 | 主力怎么操作？ | 夹板吸筹 / 拉高派发 / 高抛低吸 / 不主动洗盘 |
+| 拉升规律 | 每次怎么启动？ | 突然放量暴力拉升 / 渐进推升 / 靠板块β |
+| 出货规律 | 怎么见顶？ | 高位放量长阴 / 巨量滞涨 / 利好不涨 |
+| 盘口特征 | 盘口有什么异常？ | 夹板结构 / 单边压单托单 / 尾盘拉升 |
+| 量能特征 | 量怎么配合价？ | 地量磨底 / 放量突破 / 缩量上涨含意 |
+| 消息敏感度 | 对什么消息反应大？ | 政策敏感 / 重组敏感 / 业绩敏感 |
+| 板块联动 | 跟板块还是走独立？ | 强共振 / 弱于板块 / 独立行情 |
+| 估值锚 | 技术之外的托底逻辑 | 破净 / 历史底部PE / 高位高估值 |
+| 关键价位 | 支撑/压力/启动/止损 | 结构化列出，附依据 |
+| 异常标记 | 当前有无异常？ | ⭐夹板吸筹 / ⚠️高位破位 / 无 |
+
+### 特征快照示例（非强制格式，仅供参考）
 
 ```markdown
-## 股性特征（持续积累）
-
-### 已观察到的特征
-- [x] **消息敏感型**: 对重组/政策消息反应剧烈，公告后3日平均涨幅12%
-- [x] **机构控盘型**: 前十大股东持股65%，盘中波动相对平稳
-- [x] **技术跟随型**: 突破MA20后惯性上涨2-3天，成功率80%
-
-### 操盘风格观察
-- 主力资金风格: 机构控盘，游资偶尔参与
-- 典型走势特征: 早盘决定全天方向，尾盘很少异动
-- 对消息敏感度: **极高**（重组/政策）
-- 板块联动性: 强（跟随券商板块）
-
-### 历史验证记录
-| 日期 | 预测 | 实际 | 结果 | 偏差原因 |
-|------|------|------|------|---------|
-| 2026-04-23 | BUY | +2.1% | ✅ | 重组预期 |
-| 2026-04-24 | BUY | -1.13% | ❌ | 大盘跳水 |
+## 当前特征快照（最后复盘 2026-08-13）
+- **股性本质**: 波段振幅票，反复高抛低吸，不做趋势推升
+- **主力手法**: 夹板吸筹（上方18.19压2390手/下方18.11托1604手）
+- **当前阶段**: 低位地量磨底（距顶部回撤11.5%）
+- **异常标记**: ⭐ 夹板吸筹
+- **关键价位**: 启动位18.20-18.30 / 支撑17.70-17.73 / 铁底16.22
 ```
 
 ## 每日复盘报告模板
@@ -389,8 +412,8 @@ CREATE TABLE IF NOT EXISTS accuracy_stats (
 每日复盘后检查：
 - [ ] 所有昨日预测已验证
 - [ ] 偏差原因已记录到 review_log
-- [ ] 股性理解已更新到 stock_character
-- [ ] 股票档案 profile.md 已更新
+- [ ] 个股特征已全量重写到 profile.md（非增量追加）
+- [ ] 异常股票已单独详细描述和分析
 - [ ] 复盘报告已生成
 - [ ] 准确率统计已更新
 - [ ] 连续错误已分析是否需要优化 prompt

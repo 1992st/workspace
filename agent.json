@@ -143,9 +143,14 @@
       "description": "盘中每30分钟监控自选股行情"
     },
     {
+      "name": "stock-prediction-case-freeze",
+      "schedule": "35 15 * * 1-5",
+      "description": "收盘后冻结事实、特征和预测 case"
+    },
+    {
       "name": "daily-aftermarket-review",
-      "schedule": "30 16 * * 1-5",
-      "description": "收盘后每日复盘"
+      "schedule": "0 16 * * 1-5",
+      "description": "对到期 case 执行对抗性审查与机械复盘"
     },
     {
       "name": "evening-news-analysis",

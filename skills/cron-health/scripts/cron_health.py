@@ -23,6 +23,7 @@ ENV_FILES = [
 
 MORNING_JOB_ID = "5183d2f0-ab69-4462-b637-1cef41203e91"
 AFTERMARKET_JOB_ID = "win-stock-aftermarket-analysis"
+CASE_FREEZE_JOB_ID = "win-stock-prediction-case-freeze"
 NANYA_JOB_ID = "700ac814-3a8f-40e8-af6b-4ed260730649"
 RUNS_DIR = CRON_DIR / "runs"
 LOCAL_GATEWAY_URL = os.getenv("WIN_STOCK_OPENCLAW_GATEWAY_URL") or "ws://192.168.150.103:18789"
@@ -148,6 +149,23 @@ def latest_aftermarket_run() -> Dict[str, Any]:
         return {"exists": False}
     row = rows[-1]
     return describe_run(row)
+
+
+def case_store_status() -> Dict[str, Any]:
+    """Check append-only case artifacts without treating old Markdown as predictions."""
+    root = ROOT / "data" / "market" / "case_store"
+    result: Dict[str, Any] = {"root": str(root), "exists": root.exists()}
+    if not root.exists():
+        result.update({"cases": 0, "predictions": 0, "audits": 0, "outcomes": 0, "ok": False})
+        return result
+    counts = {}
+    for name in ("cases", "facts", "features", "predictions", "audits", "outcomes"):
+        path = root / f"{name}.jsonl"
+        counts[name] = sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip()) if path.exists() else 0
+    result.update(counts)
+    result["ok"] = counts["cases"] >= counts["predictions"] and counts["predictions"] >= counts["outcomes"]
+    result["warning"] = None if result["ok"] else "case/prediction/outcome counts are inconsistent"
+    return result
 
 
 def runs_for_job(job_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -411,6 +429,7 @@ def main() -> int:
         "gateway": gateway_diagnostics(),
         "jobs": {
             "morning": describe_job(jobs, states, MORNING_JOB_ID),
+            "case_freeze": describe_job(jobs, states, CASE_FREEZE_JOB_ID),
             "aftermarket": describe_job(jobs, states, AFTERMARKET_JOB_ID),
             "nanya": describe_job(jobs, states, NANYA_JOB_ID),
         },
@@ -453,6 +472,7 @@ def main() -> int:
             "morning": manual_success_after_failed_scheduled(morning_runs, expected_morning),
         },
         "latest_aftermarket_run": latest_aftermarket,
+        "case_store": case_store_status(),
         "aftermarket_effective_status": {
             "ok": bool(
                 latest_aftermarket.get("effective_status", {}).get("ok")
