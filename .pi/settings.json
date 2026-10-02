@@ -1,0 +1,5 @@
+{
+  "defaultProvider": "Deepseek",
+  "defaultModel": "deepseek-flash",
+  "defaultThinkingLevel": "high"
+}

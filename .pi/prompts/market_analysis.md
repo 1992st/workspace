@@ -1,0 +1,1 @@
+../../prompts/current/market_analysis.md

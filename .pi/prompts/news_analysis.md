@@ -1,0 +1,1 @@
+../../prompts/current/news_analysis.md

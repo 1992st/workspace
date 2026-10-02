@@ -1,0 +1,42 @@
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+export default function (pi: ExtensionAPI) {
+	let apiKey = process.env.DEEPSEEK_API_KEY;
+	if (!apiKey) {
+		const config = JSON.parse(readFileSync(join(homedir(), ".openclaw", "openclaw.json"), "utf8")) as {
+			models?: { providers?: { deepseek?: { baseUrl?: string; apiKey?: string } } };
+		};
+		const source = config.models?.providers?.deepseek;
+		if (source?.baseUrl !== "https://api.deepseek.com" || typeof source.apiKey !== "string" || !source.apiKey) {
+			throw new Error("Set DEEPSEEK_API_KEY or configure the official DeepSeek credential in OpenClaw.");
+		}
+		apiKey = source.apiKey;
+	}
+	pi.registerProvider("win-stock-deepseek", {
+		name: "Win Stock DeepSeek (Official)",
+		baseUrl: "https://api.deepseek.com",
+		apiKey,
+		api: "openai-completions",
+		models: [{
+			id: "deepseek-flash",
+			name: "DeepSeek V4.1 Flash (Official)",
+			reasoning: true,
+			input: ["text"],
+			contextWindow: 1000000,
+			maxTokens: 32768,
+			// Peak rates; actual off-peak charges can be lower.
+			cost: { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
+			compat: {
+				supportsStore: false,
+				supportsDeveloperRole: false,
+				maxTokensField: "max_tokens",
+				thinkingFormat: "deepseek",
+				requiresReasoningContentOnAssistantMessages: true,
+			},
+			thinkingLevelMap: { minimal: "low", low: "low", medium: "high", high: "high", max: "max" },
+		}],
+	});
+}

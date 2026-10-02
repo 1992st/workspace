@@ -1,0 +1,1 @@
+../../prompts/current/stock_analysis.md

@@ -1,0 +1,1 @@
+../../prompts/current/book_method_extraction.md
